@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crystal Maze – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .info-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .info-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-list li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-list kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Crystal Maze</h2>
+      <p>Distruggi tutti i cristalli con la pallina! Usa il pad per rimbalzare e non perdere la pallina.</p>
+      <div class="info-box">
+        <h3>🎮 Controlli</h3>
+        <ul class="controls-list" id="controlsList">
+          <li><kbd>← →</kbd> / <kbd>Mouse</kbd> — Muovi il pad</li>
+          <li><kbd>Spazio</kbd> / <kbd>Click</kbd> — Lancia la pallina</li>
+          <li>3 vite disponibili</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Crystal Maze</div>
+            <div class="overlay-sub">Quanti cristalli riesci a distruggere?</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale <span class="arrow"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    const GAME_ID = 'crystal-maze';
+    const scoreEl       = document.getElementById('scoreDisplay');
+    const overlayIdle   = document.getElementById('overlayIdle');
+    const overlayGO     = document.getElementById('overlayGameover');
+    const finalScoreEl  = document.getElementById('finalScore');
+    const hsBadge       = document.getElementById('newHighScoreBadge');
+
+    const canvas = document.getElementById('gameCanvas');
+
+    // ── LOGICA DI GIOCO ──
+
+    // === COSTANTI ===
+    const GAME_W = 480, GAME_H = 600;
+    const PAD_W = 90, PAD_H = 12, BALL_R = 8;
+    const BRICK_COLS = 10, BRICK_ROWS = 8;
+    const BRICK_W = 44, BRICK_H = 18, BRICK_GAP = 4;
+    const BRICK_START_X = 6, BRICK_START_Y = 55;
+    const BRICK_COLORS = [['#26e6ff','#0ea5e9'],['#fdd400','#d97706'],['#b60051','#9f1239']];
+
+    // === GAME OBJECT ===
+    const Game = {
+      state: 'idle',
+      pad: { x: GAME_W / 2 - PAD_W / 2, y: GAME_H - 40 },
+      ball: { x: 0, y: 0, vx: 0, vy: 0 },
+      bricks: [],
+      lives: 3,
+      ballInPlay: false,
+
+      reset() {
+        this.pad.x = GAME_W / 2 - PAD_W / 2;
+        this.ball = {
+          x: GAME_W / 2,
+          y: GAME_H - 60,
+          vx: BubbleEngine.utils.randFloat(-160, 160),
+          vy: -300
+        };
+        this.lives = 3;
+        this.ballInPlay = false;
+        this._buildBricks();
+        scoreEl.textContent = '0';
+      },
+
+      _buildBricks() {
+        this.bricks = [];
+        for (let row = 0; row < BRICK_ROWS; row++) {
+          for (let col = 0; col < BRICK_COLS; col++) {
+            const tier = row < 3 ? 0 : row < 6 ? 1 : 2; // 0=fragile,1=medio,2=duro
+            const hp = tier + 1;
+            this.bricks.push({
+              x: BRICK_START_X + col * (BRICK_W + BRICK_GAP),
+              y: BRICK_START_Y + row * (BRICK_H + BRICK_GAP),
+              w: BRICK_W, h: BRICK_H,
+              hp, maxHp: hp, alive: true, tier
+            });
+          }
+        }
+      },
+
+      update(dt) {
+        if (this.state !== 'playing') return;
+
+        // Muovi pad
+        const ip = BubbleEngine.input;
+        if (ip.keys.has('ArrowLeft'))  this.pad.x = Math.max(0, this.pad.x - 380 * dt);
+        if (ip.keys.has('ArrowRight')) this.pad.x = Math.min(GAME_W - PAD_W, this.pad.x + 380 * dt);
+        // Mouse / touch
+        if (ip.pointer.x > 0) {
+          this.pad.x = BubbleEngine.utils.clamp(ip.pointer.x - PAD_W / 2, 0, GAME_W - PAD_W);
+        }
+
+        // Lancia pallina
+        if (!this.ballInPlay) {
+          this.ball.x = this.pad.x + PAD_W / 2;
+          this.ball.y = this.pad.y - BALL_R - 2;
+          if (ip.justPressed.has('Space') || ip.pointer.justDown) {
+            this.ballInPlay = true;
+            this.ball.vx = BubbleEngine.utils.randFloat(-160, 160);
+            this.ball.vy = -300;
+          }
+          return;
+        }
+
+        // Muovi pallina
+        this.ball.x += this.ball.vx * dt;
+        this.ball.y += this.ball.vy * dt;
+
+        // Rimbalzo muri
+        if (this.ball.x - BALL_R < 0)     { this.ball.x = BALL_R;          this.ball.vx = Math.abs(this.ball.vx); }
+        if (this.ball.x + BALL_R > GAME_W) { this.ball.x = GAME_W - BALL_R; this.ball.vx = -Math.abs(this.ball.vx); }
+        if (this.ball.y - BALL_R < 0)     { this.ball.y = BALL_R;           this.ball.vy = Math.abs(this.ball.vy); }
+
+        // Pallina persa
+        if (this.ball.y > GAME_H + 20) {
+          this.lives--;
+          BubbleEngine.audio.beep(150, 0.3, 'sawtooth', 0.5);
+          if (this.lives <= 0) return this._die();
+          this.ballInPlay = false;
+          this.ball.x = this.pad.x + PAD_W / 2;
+          this.ball.y = this.pad.y - BALL_R - 2;
+        }
+
+        // Rimbalzo pad (angolo dipende dal punto di impatto)
+        if (this.ball.vy > 0 &&
+            BubbleEngine.utils.AABB(
+              this.ball.x - BALL_R, this.ball.y, BALL_R * 2, 2,
+              this.pad.x, this.pad.y, PAD_W, PAD_H
+            )) {
+          const hit = (this.ball.x - (this.pad.x + PAD_W / 2)) / (PAD_W / 2);
+          const speed = Math.sqrt(this.ball.vx ** 2 + this.ball.vy ** 2);
+          const angle = hit * 1.1;
+          this.ball.vx = speed * Math.sin(angle);
+          this.ball.vy = -Math.abs(speed * Math.cos(angle));
+          BubbleEngine.audio.beep(330, 0.04, 'sine', 0.3);
+        }
+
+        // Collisione mattoni
+        let score = parseInt(scoreEl.textContent.replace(/\./g, '')) || 0;
+        let hit = false;
+        for (const b of this.bricks) {
+          if (!b.alive || hit) continue;
+          if (BubbleEngine.utils.AABB(
+            this.ball.x - BALL_R, this.ball.y - BALL_R, BALL_R * 2, BALL_R * 2,
+            b.x, b.y, b.w, b.h
+          )) {
+            b.hp--;
+            if (b.hp <= 0) {
+              b.alive = false;
+              score += (b.tier + 1) * 10;
+              scoreEl.textContent = score.toLocaleString('it-IT');
+            }
+            this.ball.vy = -this.ball.vy;
+            BubbleEngine.audio.beep(440 + b.tier * 120, 0.05, 'square', 0.25);
+            hit = true;
+          }
+        }
+
+        // Win: tutti i mattoni distrutti
+        if (this.bricks.every(b => !b.alive)) {
+          this._buildBricks();
+          this.ballInPlay = false;
+          BubbleEngine.audio.playMelody([{freq:523,dur:.1},{freq:659,dur:.1},{freq:784,dur:.2}]);
+        }
+      },
+
+      _die() {
+        this.state = 'dead';
+        BubbleEngine.audio.noise(0.4, 0.6);
+        const score = parseInt(scoreEl.textContent.replace(/\./g, '')) || 0;
+        setTimeout(() => showGameOver(score), 500);
+      },
+
+      render(ctx) {
+        // Sfondo
+        ctx.fillStyle = '#1a0a2e';
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+        // Griglia decorativa
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < GAME_W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,GAME_H); ctx.stroke(); }
+        for (let y = 0; y < GAME_H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(GAME_W,y); ctx.stroke(); }
+
+        // Mattoni
+        this.bricks.filter(b => b.alive).forEach(b => {
+          const tierColors = BRICK_COLORS[b.tier];
+          // Corpo
+          const g = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
+          g.addColorStop(0, tierColors[0]);
+          g.addColorStop(1, tierColors[1]);
+          ctx.fillStyle = g;
+          if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 3); ctx.fill(); }
+          else ctx.fillRect(b.x, b.y, b.w, b.h);
+          // Gloss
+          ctx.fillStyle = 'rgba(255,255,255,0.22)';
+          if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(b.x + 2, b.y + 2, b.w - 4, 4, 2); ctx.fill(); }
+          else ctx.fillRect(b.x + 2, b.y + 2, b.w - 4, 4);
+          // Crack se danneggiato
+          if (b.hp < b.maxHp) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(b.x + b.w * 0.3, b.y + 2);
+            ctx.lineTo(b.x + b.w * 0.5, b.y + b.h - 2);
+            ctx.stroke();
+          }
+        });
+
+        // Pad
+        const pg = ctx.createLinearGradient(this.pad.x, this.pad.y, this.pad.x, this.pad.y + PAD_H);
+        pg.addColorStop(0, '#26e6ff');
+        pg.addColorStop(1, '#006571');
+        ctx.fillStyle = pg;
+        if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(this.pad.x, this.pad.y, PAD_W, PAD_H, 6); ctx.fill(); }
+        else ctx.fillRect(this.pad.x, this.pad.y, PAD_W, PAD_H);
+
+        // Pallina con glow
+        ctx.shadowColor = '#26e6ff';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(this.ball.x, this.ball.y, BALL_R, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Vite
+        for (let i = 0; i < this.lives; i++) {
+          ctx.fillStyle = '#b60051';
+          ctx.beginPath();
+          ctx.arc(16 + i * 22, GAME_H - 16, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    };
+
+    // Init dopo costanti
+    BubbleEngine.init(canvas, { width: GAME_W, height: GAME_H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+    function showGameOver(score) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, score);
+      BubbleScores.save(GAME_ID, score);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = score.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>
