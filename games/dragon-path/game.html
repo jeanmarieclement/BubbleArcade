@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragon Path – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .info-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .info-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-list li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-list kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Dragon Path</h2>
+      <p>Guida il drago a mangiare le anime per crescere. Attento a non colpire i muri o te stesso!</p>
+      <div class="info-box">
+        <h3>🎮 Controlli</h3>
+        <ul class="controls-list" id="controlsList">
+          <li><kbd>↑ ↓ ← →</kbd> / <kbd>WASD</kbd> — Direzione</li>
+          <li>Mangia le anime arancioni per crescere</li>
+          <li>Evita i muri e il tuo corpo!</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Dragon Path</div>
+            <div class="overlay-sub">Quanto riesci a far crescere il tuo drago?</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale <span class="arrow"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    const GAME_ID = 'dragon-path';
+    const scoreEl       = document.getElementById('scoreDisplay');
+    const overlayIdle   = document.getElementById('overlayIdle');
+    const overlayGO     = document.getElementById('overlayGameover');
+    const finalScoreEl  = document.getElementById('finalScore');
+    const hsBadge       = document.getElementById('newHighScoreBadge');
+
+    const canvas = document.getElementById('gameCanvas');
+
+    // ── LOGICA DI GIOCO QUI ──
+
+    // === COSTANTI ===
+    const CELL = 20, COLS = 24, ROWS = 24;
+    const GAME_W = COLS * CELL, GAME_H = ROWS * CELL; // 480x480
+
+    // === GAME OBJECT ===
+    const Game = {
+      state: 'idle',
+      snake: [],
+      dir: [1, 0],
+      nextDir: [1, 0],
+      food: null,
+      score: 0,
+      speed: 8,       // celle al secondo
+      timer: 0,
+
+      reset() {
+        this.snake = [[12,12],[11,12],[10,12]];
+        this.dir = [1, 0];
+        this.nextDir = [1, 0];
+        this.score = 0;
+        this.timer = 0;
+        this.speed = 8;
+        this._spawnFood();
+        scoreEl.textContent = '0';
+      },
+
+      _spawnFood() {
+        const free = [];
+        for (let x = 0; x < COLS; x++) {
+          for (let y = 0; y < ROWS; y++) {
+            if (!this.snake.some(s => s[0] === x && s[1] === y)) {
+              free.push([x, y]);
+            }
+          }
+        }
+        this.food = free[BubbleEngine.utils.randInt(0, free.length - 1)];
+      },
+
+      update(dt) {
+        if (this.state !== 'playing') return;
+
+        // Input direzione
+        const jp = BubbleEngine.input.justPressed;
+        if (jp.has('ArrowUp')    || jp.has('KeyW')) this.nextDir = [0, -1];
+        if (jp.has('ArrowDown')  || jp.has('KeyS')) this.nextDir = [0,  1];
+        if (jp.has('ArrowLeft')  || jp.has('KeyA')) this.nextDir = [-1, 0];
+        if (jp.has('ArrowRight') || jp.has('KeyD')) this.nextDir = [1,  0];
+
+        // Step temporizzato
+        this.timer += dt;
+        if (this.timer < 1 / this.speed) return;
+        this.timer = 0;
+
+        // Applica direzione (non puoi invertire)
+        const [ndx, ndy] = this.nextDir;
+        if (ndx !== -this.dir[0] || ndy !== -this.dir[1]) {
+          this.dir = this.nextDir;
+        }
+
+        const [hx, hy] = this.snake[0];
+        const nx = hx + this.dir[0];
+        const ny = hy + this.dir[1];
+
+        // Collisione muro
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return this._die();
+        // Collisione corpo
+        if (this.snake.some(s => s[0] === nx && s[1] === ny)) return this._die();
+
+        this.snake.unshift([nx, ny]);
+
+        // Mangia cibo
+        if (nx === this.food[0] && ny === this.food[1]) {
+          this.score += 10;
+          scoreEl.textContent = this.score;
+          BubbleEngine.audio.beep(523, 0.07, 'square', 0.3);
+          this._spawnFood();
+          if (this.score % 50 === 0) {
+            this.speed = Math.min(this.speed + 1, 18);
+          }
+        } else {
+          this.snake.pop();
+        }
+      },
+
+      _die() {
+        this.state = 'dead';
+        BubbleEngine.audio.noise(0.35, 0.5);
+        setTimeout(() => showGameOver(this.score), 500);
+      },
+
+      render(ctx) {
+        // Sfondo a scacchiera scura
+        ctx.fillStyle = '#1a0a2e';
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+        for (let x = 0; x < COLS; x++) {
+          for (let y = 0; y < ROWS; y++) {
+            if ((x + y) % 2 === 0) {
+              ctx.fillStyle = 'rgba(255,255,255,0.025)';
+              ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+            }
+          }
+        }
+
+        // Cibo (pulsante)
+        if (this.food) {
+          const pulse = 0.8 + 0.2 * Math.sin(Date.now() / 200);
+          ctx.fillStyle = '#f97316';
+          ctx.shadowColor = '#f97316';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(
+            this.food[0] * CELL + CELL / 2,
+            this.food[1] * CELL + CELL / 2,
+            (CELL / 2 - 2) * pulse, 0, Math.PI * 2
+          );
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        // Corpo drago (gradiente testa→coda)
+        this.snake.forEach(([sx, sy], i) => {
+          const t = i / Math.max(this.snake.length - 1, 1);
+          const r = Math.round(BubbleEngine.utils.lerp(0x4a, 0x16, t));
+          const g = Math.round(BubbleEngine.utils.lerp(0xde, 0x66, t));
+          const b = Math.round(BubbleEngine.utils.lerp(0x80, 0x34, t));
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(sx * CELL + 1, sy * CELL + 1, CELL - 2, CELL - 2, 4);
+          else ctx.rect(sx * CELL + 1, sy * CELL + 1, CELL - 2, CELL - 2);
+          ctx.fill();
+        });
+
+        // Occhi sulla testa
+        if (this.snake.length > 0) {
+          const [hx, hy] = this.snake[0];
+          ctx.fillStyle = '#1a1a2e';
+          ctx.fillRect(hx * CELL + 4, hy * CELL + 4, 4, 4);
+          ctx.fillRect(hx * CELL + 12, hy * CELL + 4, 4, 4);
+        }
+      }
+    };
+
+    // Init engine dopo definizione costanti
+    BubbleEngine.init(canvas, { width: GAME_W, height: GAME_H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+    function showGameOver(score) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, score);
+      BubbleScores.save(GAME_ID, score);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = score.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>
