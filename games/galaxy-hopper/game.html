@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galaxy Hopper – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .info-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .info-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-list li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-list kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Galaxy Hopper</h2>
+      <p>Difendi la galassia dagli invasori alieni! Spara con precisione e sopravvivi a ogni ondata.</p>
+      <div class="info-box">
+        <h3>🎮 Controlli</h3>
+        <ul class="controls-list" id="controlsList">
+          <li><kbd>← →</kbd> — Muovi la nave</li>
+          <li><kbd>Spazio</kbd> — Spara</li>
+          <li>3 vite disponibili</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Galaxy Hopper</div>
+            <div class="overlay-sub">Quante ondate riesci a sopravvivere?</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale <span class="arrow"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    const GAME_ID = 'galaxy-hopper';
+    const scoreEl       = document.getElementById('scoreDisplay');
+    const overlayIdle   = document.getElementById('overlayIdle');
+    const overlayGO     = document.getElementById('overlayGameover');
+    const finalScoreEl  = document.getElementById('finalScore');
+    const hsBadge       = document.getElementById('newHighScoreBadge');
+
+    const canvas = document.getElementById('gameCanvas');
+
+    // ── LOGICA DI GIOCO QUI ──
+
+    // === COSTANTI ===
+    const GAME_W = 480, GAME_H = 640;
+    const ROWS_INV = 4, COLS_INV = 8;
+    const INV_W = 44, INV_H = 28;
+    const INV_MARGIN_X = 40;
+
+    // === SPRITE PLAYER (7x7 pixel, scale 4) ===
+    const SHIP_DEF = {
+      scale: 4,
+      palette: ['#26e6ff','#006571','#fdd400'],
+      frames: [[
+        [0,0,0,1,0,0,0],
+        [0,0,1,1,1,0,0],
+        [0,1,1,1,1,1,0],
+        [1,1,1,1,1,1,1],
+        [1,2,1,1,1,2,1],
+        [0,1,0,0,0,1,0],
+        [0,0,1,0,1,0,0]
+      ]]
+    };
+    const SHIP_SPRITES = Sprites.prerender(SHIP_DEF);
+    const SHIP_W = 7 * 4, SHIP_H = 7 * 4;
+
+    // === SPRITE INVADER TYPE A (11x8 pixel, scale 3) ===
+    const INV_A_DEF = {
+      scale: 3,
+      palette: ['#ff7198','#ff4c85','#fdd400'],
+      frames: [
+        [
+          [0,0,1,0,0,0,0,0,1,0,0],
+          [0,0,0,1,0,0,0,1,0,0,0],
+          [0,0,1,1,1,1,1,1,1,0,0],
+          [0,1,1,0,1,1,1,0,1,1,0],
+          [1,1,1,1,1,1,1,1,1,1,1],
+          [1,0,1,1,1,1,1,1,1,0,1],
+          [1,0,1,0,0,0,0,0,1,0,1],
+          [0,0,0,1,1,0,1,1,0,0,0]
+        ],
+        [
+          [0,0,1,0,0,0,0,0,1,0,0],
+          [1,0,0,1,0,0,0,1,0,0,1],
+          [1,0,1,1,1,1,1,1,1,0,1],
+          [1,1,1,0,1,1,1,0,1,1,1],
+          [1,1,1,1,1,1,1,1,1,1,1],
+          [0,1,1,1,1,1,1,1,1,1,0],
+          [0,0,1,0,0,0,0,0,1,0,0],
+          [0,1,0,0,0,0,0,0,0,1,0]
+        ]
+      ]
+    };
+    const INV_SPRITES = Sprites.prerender(INV_A_DEF);
+    const INV_SPR_W = 11 * 3, INV_SPR_H = 8 * 3;
+
+    // === GAME OBJECT ===
+    const Game = {
+      state: 'idle',
+      player: { x: GAME_W / 2 - SHIP_W / 2, y: GAME_H - 70 },
+      bullets: [],
+      enemyBullets: [],
+      invaders: [],
+      invDir: 1,
+      invX: INV_MARGIN_X,
+      invY: 80,
+      invStepTimer: 0,
+      invStepInterval: 0.8,
+      ufoX: -60,
+      ufoActive: false,
+      ufoTimer: 0,
+      lives: 3,
+      wave: 1,
+      animFrame: 0,
+      gameTime: 0,
+
+      reset() {
+        this.player.x = GAME_W / 2 - SHIP_W / 2;
+        this.bullets = [];
+        this.enemyBullets = [];
+        this.lives = 3;
+        this.wave = 1;
+        this.invDir = 1;
+        this.invX = INV_MARGIN_X;
+        this.invY = 80;
+        this.invStepInterval = 0.8;
+        this.invStepTimer = 0;
+        this.ufoActive = false;
+        this.ufoTimer = 0;
+        this.animFrame = 0;
+        this.gameTime = 0;
+        this._spawnWave();
+        scoreEl.textContent = '0';
+      },
+
+      _spawnWave() {
+        this.invaders = [];
+        for (let r = 0; r < ROWS_INV; r++) {
+          for (let c = 0; c < COLS_INV; c++) {
+            this.invaders.push({ r, c, alive: true, hp: r < 1 ? 2 : 1 });
+          }
+        }
+        this.invX = INV_MARGIN_X;
+        this.invY = 80;
+        this.invDir = 1;
+        this.invStepTimer = 0;
+        this.invStepInterval = Math.max(0.2, 0.8 - (this.wave - 1) * 0.08);
+      },
+
+      update(dt) {
+        if (this.state !== 'playing') return;
+        this.animFrame += dt * 4;
+        this.gameTime += dt;
+
+        // Player movement
+        const ip = BubbleEngine.input;
+        if (ip.keys.has('ArrowLeft'))  this.player.x = Math.max(0, this.player.x - 280 * dt);
+        if (ip.keys.has('ArrowRight')) this.player.x = Math.min(GAME_W - SHIP_W, this.player.x + 280 * dt);
+
+        // Player shoot
+        if (ip.justPressed.has('Space') && this.bullets.length < 2) {
+          this.bullets.push({ x: this.player.x + SHIP_W / 2, y: this.player.y });
+          BubbleEngine.audio.beep(880, 0.05, 'square', 0.25);
+        }
+
+        // Move player bullets
+        this.bullets.forEach(b => b.y -= 500 * dt);
+        this.bullets = this.bullets.filter(b => b.y > -10);
+
+        // Move enemy bullets
+        this.enemyBullets.forEach(b => b.y += 220 * dt);
+        this.enemyBullets = this.enemyBullets.filter(b => b.y < GAME_H + 10);
+
+        // Invader step
+        this.invStepTimer += dt;
+        const aliveInv = this.invaders.filter(i => i.alive);
+        if (this.invStepTimer >= this.invStepInterval) {
+          this.invStepTimer = 0;
+          const positions = aliveInv.map(i => this.invX + i.c * INV_W);
+          const maxX = Math.max(...positions) + INV_SPR_W;
+          const minX = Math.min(...positions);
+          if ((this.invDir > 0 && maxX > GAME_W - 10) ||
+              (this.invDir < 0 && minX < 10)) {
+            this.invDir *= -1;
+            this.invY += 20;
+          } else {
+            this.invX += this.invDir * 14;
+          }
+          // Enemy shoot
+          if (aliveInv.length > 0 && Math.random() < 0.35) {
+            const shooter = aliveInv[BubbleEngine.utils.randInt(0, aliveInv.length - 1)];
+            this.enemyBullets.push({
+              x: this.invX + shooter.c * INV_W + INV_SPR_W / 2,
+              y: this.invY + shooter.r * INV_H + INV_SPR_H
+            });
+          }
+        }
+
+        // Player bullets vs invaders
+        let score = parseInt(scoreEl.textContent.replace(/\./g, '')) || 0;
+        for (const b of this.bullets) {
+          for (const inv of aliveInv) {
+            const ix = this.invX + inv.c * INV_W;
+            const iy = this.invY + inv.r * INV_H;
+            if (BubbleEngine.utils.AABB(b.x - 3, b.y - 8, 6, 16, ix, iy, INV_SPR_W, INV_SPR_H)) {
+              inv.hp--;
+              if (inv.hp <= 0) inv.alive = false;
+              b.y = -999;
+              score += inv.r < 2 ? 30 : 10;
+              scoreEl.textContent = score.toLocaleString('it-IT');
+              BubbleEngine.audio.beep(220 + BubbleEngine.utils.randInt(0, 180), 0.08, 'sawtooth', 0.3);
+              break;
+            }
+          }
+        }
+
+        // Enemy bullets vs player
+        for (const b of this.enemyBullets) {
+          if (BubbleEngine.utils.AABB(b.x - 3, b.y - 8, 6, 16, this.player.x, this.player.y, SHIP_W, SHIP_H)) {
+            b.y = GAME_H + 999;
+            this.lives--;
+            BubbleEngine.audio.noise(0.3, 0.6);
+            if (this.lives <= 0) {
+              return this._die(score);
+            }
+          }
+        }
+
+        // Invaders reach bottom
+        if (aliveInv.some(i => this.invY + i.r * INV_H + INV_SPR_H > this.player.y)) {
+          return this._die(score);
+        }
+
+        // Wave cleared
+        if (aliveInv.length === 0) {
+          this.wave++;
+          this._spawnWave();
+          BubbleEngine.audio.playMelody([{freq:523,dur:.08},{freq:659,dur:.08},{freq:784,dur:.12}]);
+        }
+
+        // UFO
+        this.ufoTimer += dt;
+        if (!this.ufoActive && this.ufoTimer > 22) {
+          this.ufoActive = true;
+          this.ufoX = -60;
+          this.ufoTimer = 0;
+        }
+        if (this.ufoActive) {
+          this.ufoX += 130 * dt;
+          if (this.ufoX > GAME_W + 70) this.ufoActive = false;
+          for (const b of this.bullets) {
+            if (BubbleEngine.utils.AABB(b.x - 3, b.y, 6, 12, this.ufoX - 22, GAME_H * 0.12 - 10, 44, 20)) {
+              score += 500;
+              scoreEl.textContent = score.toLocaleString('it-IT');
+              this.ufoActive = false;
+              b.y = -999;
+              BubbleEngine.audio.beep(1760, 0.25, 'sine', 0.5);
+            }
+          }
+        }
+      },
+
+      _die(score) {
+        this.state = 'dead';
+        setTimeout(() => showGameOver(score || 0), 600);
+      },
+
+      render(ctx) {
+        // Sfondo stellato
+        ctx.fillStyle = '#0d0514';
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+        for (let i = 0; i < 80; i++) {
+          const sx = ((i * 137.5) % GAME_W);
+          const sy = ((i * 97.3)  % GAME_H);
+          ctx.fillStyle = `rgba(255,255,255,${0.15 + (i % 5) * 0.05})`;
+          ctx.fillRect(sx, sy, 1 + (i % 2), 1 + (i % 2));
+        }
+
+        // Invaders
+        this.invaders.filter(i => i.alive).forEach(inv => {
+          const ix = this.invX + inv.c * INV_W;
+          const iy = this.invY + inv.r * INV_H;
+          Sprites.blit(ctx, INV_SPRITES, Math.floor(this.animFrame) % 2, ix, iy);
+        });
+
+        // UFO
+        if (this.ufoActive) {
+          ctx.fillStyle = '#b60051';
+          ctx.beginPath();
+          ctx.ellipse(this.ufoX, GAME_H * 0.12, 22, 9, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ff7198';
+          ctx.beginPath();
+          ctx.ellipse(this.ufoX, GAME_H * 0.12 - 6, 11, 7, 0, 0, Math.PI);
+          ctx.fill();
+        }
+
+        // Player ship
+        Sprites.blit(ctx, SHIP_SPRITES, 0, this.player.x, this.player.y);
+
+        // Bullets
+        ctx.fillStyle = '#26e6ff';
+        this.bullets.forEach(b => {
+          ctx.shadowColor = '#26e6ff';
+          ctx.shadowBlur = 6;
+          ctx.fillRect(b.x - 2, b.y, 4, 14);
+        });
+        ctx.fillStyle = '#ff7198';
+        ctx.shadowBlur = 0;
+        this.enemyBullets.forEach(b => { ctx.fillRect(b.x - 2, b.y, 4, 12); });
+        ctx.shadowBlur = 0;
+
+        // Lives
+        for (let i = 0; i < this.lives; i++) {
+          Sprites.blit(ctx, SHIP_SPRITES, 0, 10 + i * 32, GAME_H - SHIP_H - 6);
+        }
+      }
+    };
+
+    BubbleEngine.init(canvas, { width: GAME_W, height: GAME_H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+    function showGameOver(score) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, score);
+      BubbleScores.save(GAME_ID, score);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = score.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>
