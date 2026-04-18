@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bubble Arcade – Free HTML5 Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/design-system.css">
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* ══════════════════════════════════════════
+       NAVBAR
+    ══════════════════════════════════════════ */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: rgba(252, 244, 255, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(186, 164, 211, 0.25);
+    }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--on-surface-v);
+      font-weight: 500; font-size: 0.92rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--primary); }
+
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+
+    /* ══════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════ */
+    .hero {
+      min-height: calc(100vh - 65px);
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 4rem 3rem 4rem 4rem;
+      position: relative; overflow: hidden;
+    }
+
+    /* Radial gradient backdrop */
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 75% 80% at 75% 55%, var(--surface-c) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 15% 80%, rgba(38,230,255,0.18) 0%, transparent 70%);
+      z-index: 0;
+    }
+
+    /* Floating ink blobs */
+    .blob {
+      position: absolute; border-radius: 50%;
+      filter: blur(70px); pointer-events: none; z-index: 0;
+    }
+    .blob-1 { width: 340px; height: 340px; background: var(--primary-c);     top: -100px; right: 180px; opacity: 0.18; }
+    .blob-2 { width: 220px; height: 220px; background: var(--secondary-c);   bottom: 40px; right: 460px; opacity: 0.28; }
+    .blob-3 { width: 180px; height: 180px; background: var(--tertiary-c);    top: 120px; left: 80px;  opacity: 0.22; }
+
+    .hero-left  { position: relative; z-index: 1; }
+    .hero-right { position: relative; z-index: 1; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: var(--secondary-c); color: var(--on-secondary-c);
+      font-weight: 700; font-size: 0.72rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 0.38rem 1rem; border-radius: 999px;
+      margin-bottom: 1.75rem;
+      animation: reveal-up 0.5s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+    }
+
+    .hero-title {
+      font-size: clamp(3.2rem, 5.5vw, 5.8rem);
+      font-weight: 800; line-height: 1.0;
+      letter-spacing: -0.025em; color: var(--on-bg);
+      margin-bottom: 1.6rem;
+      animation: reveal-up 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both;
+    }
+    .hero-title em { font-style: normal; color: var(--primary); }
+
+    .hero-desc {
+      font-size: 1.08rem; line-height: 1.65;
+      color: var(--on-surface-v);
+      max-width: 480px; margin-bottom: 2.6rem;
+      animation: reveal-up 0.6s cubic-bezier(0.16,1,0.3,1) 0.25s both;
+    }
+
+    .hero-actions {
+      display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+      animation: reveal-up 0.6s cubic-bezier(0.16,1,0.3,1) 0.35s both;
+    }
+
+    .hero-stats {
+      display: flex; gap: 3rem; margin-top: 3.5rem;
+      animation: reveal-up 0.6s cubic-bezier(0.16,1,0.3,1) 0.45s both;
+    }
+    .stat-num {
+      font-size: 1.9rem; font-weight: 800; letter-spacing: -0.025em;
+      color: var(--on-bg); line-height: 1;
+    }
+    .stat-lbl {
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--on-surface-v); margin-top: 0.25rem;
+    }
+
+    /* ── Hero floating cards ── */
+    .hero-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 1.1rem;
+      padding: 2.5rem 1rem 2.5rem 2rem;
+    }
+
+    .hcard {
+      background: var(--surface-0);
+      border-radius: 2.2rem;
+      overflow: visible;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      cursor: pointer;
+      will-change: transform;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+    }
+    .hcard:hover { box-shadow: var(--shadow-ambi); }
+    .hcard:nth-child(1) { transform: rotate(-3.5deg); animation: float-a 4.2s ease-in-out infinite; }
+    .hcard:nth-child(2) { transform: rotate(2.2deg);  animation: float-b 5.0s ease-in-out infinite 0.9s; margin-top: 2rem; }
+    .hcard:nth-child(3) { transform: rotate(0.8deg);  animation: float-c 4.6s ease-in-out infinite 1.6s; grid-column: 1 / 3; max-width: 60%; margin: -0.5rem auto 0; }
+    .hcard:nth-child(1):hover { transform: rotate(-3.5deg) scale(1.06); }
+    .hcard:nth-child(2):hover { transform: rotate(2.2deg)  scale(1.06); }
+    .hcard:nth-child(3):hover { transform: rotate(0.8deg)  scale(1.06); }
+
+    .hcard-thumb {
+      width: 100%; aspect-ratio: 4/3;
+      border-radius: 2.2rem 2.2rem 0 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.2rem; position: relative; overflow: hidden;
+    }
+
+    .hcard-body { padding: 0.75rem 1rem 1rem; }
+    .hcard-genre {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--on-surface-v);
+      margin-bottom: 0.18rem;
+    }
+    .hcard-title { font-size: 0.92rem; font-weight: 700; color: var(--on-bg); }
+
+    /* ══════════════════════════════════════════
+       CATEGORIES CHIPS
+    ══════════════════════════════════════════ */
+    .cats {
+      padding: 2.5rem 3rem;
+      display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+    }
+    /* ══════════════════════════════════════════
+       SECTION HELPERS
+    ══════════════════════════════════════════ */
+    .section { padding: 4.5rem 3rem; }
+    .section-tinted { background: var(--surface-lo); }
+
+    .section-hd {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 2.5rem;
+    }
+    .section-title {
+      font-size: 1.9rem; font-weight: 800;
+      letter-spacing: -0.02em; color: var(--on-bg);
+    }
+    .section-link {
+      text-decoration: none; color: var(--primary);
+      font-weight: 600; font-size: 0.88rem;
+      display: flex; align-items: center; gap: 0.3rem;
+      transition: gap 0.2s;
+    }
+    .section-link:hover { gap: 0.6rem; }
+
+
+    /* ══════════════════════════════════════════
+       GAMES GRID
+    ══════════════════════════════════════════ */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .game-card {
+      background: var(--surface-0);
+      border-radius: 2rem;
+      overflow: visible; position: relative;
+      cursor: pointer;
+      box-shadow: 0 4px 18px -6px rgba(182,0,81,0.09);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+    }
+    .game-card:nth-child(odd):hover  { transform: scale(1.04) rotate(-1.8deg); box-shadow: var(--shadow-ambi); }
+    .game-card:nth-child(even):hover { transform: scale(1.04) rotate(1.8deg);  box-shadow: var(--shadow-ambi); }
+
+    .game-thumb {
+      width: 100%; aspect-ratio: 16/10;
+      border-radius: 2rem 2rem 0 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.8rem; position: relative; overflow: hidden;
+    }
+    /* Play overlay */
+    .game-thumb::after {
+      content: '▶ Play';
+      position: absolute; inset: 0;
+      background: rgba(182,0,81,0.75);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: white;
+      letter-spacing: 0.04em;
+      font-family: var(--font);
+      opacity: 0;
+      transition: opacity 0.22s;
+    }
+    .game-card:hover .game-thumb::after { opacity: 1; }
+
+    .game-body { padding: 1rem 1.15rem 0.8rem; }
+    .game-meta { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.32rem; }
+    .game-genre {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--surface-chh); color: var(--on-surface-v);
+      padding: 0.18rem 0.6rem; border-radius: 999px;
+    }
+    .game-rating {
+      font-size: 0.75rem; font-weight: 700; color: var(--tertiary);
+      display: flex; align-items: center; gap: 0.18rem;
+    }
+    .game-title { font-size: 1.05rem; font-weight: 700; color: var(--on-bg); margin-bottom: 0.38rem; }
+    .game-desc  { font-size: 0.8rem; line-height: 1.55; color: var(--on-surface-v); }
+
+    .game-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.15rem 1rem;
+    }
+    .game-plays { font-size: 0.76rem; color: var(--on-surface-v); font-weight: 500; }
+
+
+    /* ══════════════════════════════════════════
+       FEATURED BANNER
+    ══════════════════════════════════════════ */
+    .featured-wrap { padding: 0 3rem; }
+
+    .featured {
+      background: var(--surface-chh);
+      border-radius: 3rem;
+      padding: 3rem 3.5rem;
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 2rem;
+      position: relative; overflow: hidden;
+    }
+    .featured::before {
+      content: '';
+      position: absolute; top: -60%; right: -8%;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(182,0,81,0.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .featured-label {
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--primary);
+      margin-bottom: 0.75rem;
+    }
+    .featured-title {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 800; letter-spacing: -0.025em;
+      color: var(--on-bg); line-height: 1.1; margin-bottom: 0.8rem;
+    }
+    .featured-desc {
+      color: var(--on-surface-v); line-height: 1.65;
+      max-width: 500px; margin-bottom: 1.8rem;
+      font-size: 0.95rem;
+    }
+    .featured-emoji { font-size: 7rem; line-height: 1; }
+
+
+    /* ══════════════════════════════════════════
+       NEW GAMES ROW
+    ══════════════════════════════════════════ */
+    .new-games-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .new-card {
+      background: var(--surface-0);
+      border-radius: 2rem; overflow: hidden;
+      box-shadow: 0 4px 18px -6px rgba(182,0,81,0.09);
+      display: flex; align-items: center; gap: 1.2rem;
+      padding: 1rem 1.2rem;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
+    }
+    .new-card:hover { transform: scale(1.04); box-shadow: var(--shadow-ambi); }
+    .new-thumb-sm {
+      width: 72px; height: 72px; border-radius: 1.2rem;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+    }
+    .new-info { flex: 1; min-width: 0; }
+    .new-title { font-size: 0.95rem; font-weight: 700; color: var(--on-bg); }
+    .new-genre { font-size: 0.72rem; color: var(--on-surface-v); font-weight: 500; margin-top: 0.15rem; }
+    .new-badge {
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      padding: 0.22rem 0.6rem; border-radius: 999px;
+      display: inline-block; margin-top: 0.4rem;
+    }
+
+
+    /* ══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════ */
+    footer {
+      background: var(--surface-c);
+      padding: 3.5rem 3rem 2rem;
+      margin-top: 5rem;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem; margin-bottom: 2.5rem;
+    }
+    .footer-brand p {
+      color: var(--on-surface-v); line-height: 1.65;
+      font-size: 0.88rem; margin-top: 0.9rem; max-width: 280px;
+    }
+    .footer-col h4 {
+      font-weight: 700; font-size: 0.78rem;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--on-bg); margin-bottom: 1.1rem;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+    .footer-col a {
+      text-decoration: none; color: var(--on-surface-v);
+      font-size: 0.88rem; transition: color 0.18s;
+    }
+    .footer-col a:hover { color: var(--primary); }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(186,164,211,0.35);
+      font-size: 0.8rem; color: var(--on-surface-v);
+    }
+
+    /* ══════════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════════ */
+    @keyframes float-a {
+      0%,100% { transform: rotate(-3.5deg) translateY(0);    }
+      50%      { transform: rotate(-3.5deg) translateY(-14px); }
+    }
+    @keyframes float-b {
+      0%,100% { transform: rotate(2.2deg) translateY(0);    }
+      50%      { transform: rotate(2.2deg) translateY(-10px); }
+    }
+    @keyframes float-c {
+      0%,100% { transform: rotate(0.8deg) translateY(0);    }
+      50%      { transform: rotate(0.8deg) translateY(-8px); }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════ NAVBAR ═══════════════════════ -->
+  <nav>
+    <a href="#" class="logo">
+      <span class="logo-dot"></span>
+      Bubble Arcade
+    </a>
+    <ul class="nav-links">
+      <li><a href="#">Home</a></li>
+      <li><a href="#trending">Popular</a></li>
+      <li><a href="#new">New Games</a></li>
+      <li><a href="#categories">Categories</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="btn-nav-ghost">Log in</button>
+      <a href="#" class="btn-primary-sm">Sign Up Free</a>
+    </div>
+  </nav>
+
+
+  <!-- ═══════════════════════ HERO ═══════════════════════ -->
+  <section class="hero">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="hero-left">
+      <div class="hero-badge">🎮 100+ Free HTML5 Games</div>
+      <h1 class="hero-title">
+        Play.<br><em>Win.</em><br>Repeat.
+      </h1>
+      <p class="hero-desc">
+        Your favourite casual games, all in one place.
+        No downloads, no installs — just pure fun
+        that starts in a single click.
+      </p>
+      <div class="hero-actions">
+        <a href="#trending" class="btn-primary">Start Playing →</a>
+        <a href="#" class="btn-ghost-arrow">Browse All <span class="arrow">→</span></a>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="stat-num">2.4M+</div>
+          <div class="stat-lbl">Players worldwide</div>
+        </div>
+        <div>
+          <div class="stat-num">100+</div>
+          <div class="stat-lbl">Free games</div>
+        </div>
+        <div>
+          <div class="stat-num">0</div>
+          <div class="stat-lbl">Downloads needed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-cards">
+        <!-- card 1 -->
+        <div class="hcard">
+          <span class="badge badge-hot">🔥 Hot</span>
+          <div class="hcard-thumb th-galaxy">🌌</div>
+          <div class="hcard-body">
+            <div class="hcard-genre">Action</div>
+            <div class="hcard-title">Galaxy Hopper</div>
+          </div>
+        </div>
+        <!-- card 2 -->
+        <div class="hcard">
+          <span class="badge badge-new">✨ New</span>
+          <div class="hcard-thumb th-beat">🎵</div>
+          <div class="hcard-body">
+            <div class="hcard-genre">Rhythm</div>
+            <div class="hcard-title">Beat Bouncer</div>
+          </div>
+        </div>
+        <!-- card 3 (spanning) -->
+        <div class="hcard">
+          <div class="hcard-thumb th-jelly" style="aspect-ratio:16/7; border-radius:2.2rem 2.2rem 0 0">🟩</div>
+          <div class="hcard-body">
+            <div class="hcard-genre">Puzzle</div>
+            <div class="hcard-title">Jelly Blocks</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════ CATEGORIES ═══════════════════════ -->
+  <div id="categories" class="cats reveal d-1">
+    <button class="chip active" onclick="setActive(this)"><span class="chip-icon">⭐</span>All</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🔥</span>Action</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🧩</span>Puzzle</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🏎️</span>Racing</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🗡️</span>Adventure</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🎵</span>Music</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🍳</span>Simulation</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">⚽</span>Sports</button>
+    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🧠</span>Strategy</button>
+  </div>
+
+
+  <!-- ═══════════════════════ TRENDING GAMES ═══════════════════════ -->
+  <section id="trending" class="section section-tinted">
+    <div class="section-hd">
+      <h2 class="section-title">🔥 Trending Now</h2>
+      <a href="#" class="section-link">View all →</a>
+    </div>
+    <div class="games-grid">
+
+      <div class="game-card reveal d-1">
+        <span class="badge badge-top">⭐ Top Rated</span>
+        <div class="game-thumb th-galaxy">🌌</div>
+        <div class="game-body">
+          <div class="game-meta">
+            <span class="game-genre">Action</span>
+            <span class="game-rating">⭐ 4.9</span>
+          </div>
+          <div class="game-title">Galaxy Hopper</div>
+          <div class="game-desc">Jump from planet to planet avoiding asteroids and collecting star coins!</div>
+        </div>
+        <div class="game-footer">
+          <span class="game-plays">👾 1.2M plays</span>
+          <button class="btn-primary-sm">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card reveal d-2">
+        <div class="game-thumb th-jelly">🟩</div>
+        <div class="game-body">
+          <div class="game-meta">
+            <span class="game-genre">Puzzle</span>
+            <span class="game-rating">⭐ 4.7</span>
+          </div>
+          <div class="game-title">Jelly Blocks</div>
+          <div class="game-desc">Match colorful jelly blocks to clear the board and earn sweet points.</div>
+        </div>
+        <div class="game-footer">
+          <span class="game-plays">👾 890K plays</span>
+          <button class="btn-primary-sm">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card reveal d-3">
+        <span class="badge badge-new">🆕 New</span>
+        <div class="game-thumb th-karts">🏎️</div>
+        <div class="game-body">
+          <div class="game-meta">
+            <span class="game-genre">Racing</span>
+            <span class="game-rating">⭐ 4.8</span>
+          </div>
+          <div class="game-title">Turbo Karts</div>
+          <div class="game-desc">Fast-paced kart action with crazy power-ups and wild tracks!</div>
+        </div>
+        <div class="game-footer">
+          <span class="game-plays">👾 543K plays</span>
+          <button class="btn-primary-sm">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card reveal d-4">
+        <div class="game-thumb th-ninja">🥷</div>
+        <div class="game-body">
+          <div class="game-meta">
+            <span class="game-genre">Adventure</span>
+            <span class="game-rating">⭐ 4.6</span>
+          </div>
+          <div class="game-title">Nutty Ninja</div>
+          <div class="game-desc">Navigate dangerous forests to find his lost acorns before nightfall.</div>
+        </div>
+        <div class="game-footer">
+          <span class="game-plays">👾 310K plays</span>
+          <button class="btn-primary-sm">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card reveal d-5">
+        <div class="game-thumb th-burger">🍔</div>
+        <div class="game-body">
+          <div class="game-meta">
+            <span class="game-genre">Simulation</span>
+            <span class="game-rating">⭐ 4.5</span>
+          </div>
+          <div class="game-title">Burger Chef</div>
+          <div class="game-desc">Serve hungry customers before time runs out in this sizzling kitchen sim.</div>
+        </div>
+        <div class="game-footer">
+          <span class="game-plays">👾 278K plays</span>
+          <button class="btn-primary-sm">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card reveal d-6">
+        <span class="badge badge-new">🆕 New</span>
+        <div class="game-thumb th-beat">🎵</div>
+        <div class="game-body">
+          <div class="game-meta">
+            <span class="game-genre">Music / Rhythm</span>
+            <span class="game-rating">⭐ 4.9</span>
+          </div>
+          <div class="game-title">Beat Bouncer</div>
+          <div class="game-desc">Tap to the rhythm and keep the beat going to unlock new songs.</div>
+        </div>
+        <div class="game-footer">
+          <span class="game-plays">👾 195K plays</span>
+          <button class="btn-primary-sm">Play Now</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════ FEATURED BANNER ═══════════════════════ -->
+  <div class="featured-wrap">
+    <div class="featured">
+      <div>
+        <div class="featured-label">🏆 Game of the Month</div>
+        <div class="featured-title">Galaxy Hopper<br>Season 3</div>
+        <p class="featured-desc">
+          New galaxies, new enemies, and a full leaderboard reset.
+          Jump in now and claim the #1 spot before the season ends!
+        </p>
+        <a href="#" class="btn-primary">Play for Free →</a>
+      </div>
+      <div class="featured-emoji">🚀</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════ NEW GAMES ═══════════════════════ -->
+  <section id="new" class="section">
+    <div class="section-hd">
+      <h2 class="section-title">✨ Just Dropped</h2>
+      <a href="#" class="section-link">See all new →</a>
+    </div>
+    <div class="new-games-grid">
+
+      <div class="new-card">
+        <div class="new-thumb-sm th-puzzle">🔷</div>
+        <div class="new-info">
+          <div class="new-title">Crystal Maze</div>
+          <div class="new-genre">Puzzle</div>
+          <span class="new-badge">✨ New</span>
+        </div>
+        <button class="btn-primary-sm">Play</button>
+      </div>
+
+      <div class="new-card">
+        <div class="new-thumb-sm th-tower">🗼</div>
+        <div class="new-info">
+          <div class="new-title">Tower Rush</div>
+          <div class="new-genre">Strategy</div>
+          <span class="new-badge">✨ New</span>
+        </div>
+        <button class="btn-primary-sm">Play</button>
+      </div>
+
+      <div class="new-card">
+        <div class="new-thumb-sm th-sky">☁️</div>
+        <div class="new-info">
+          <div class="new-title">Sky Surfer</div>
+          <div class="new-genre">Action</div>
+          <span class="new-badge">✨ New</span>
+        </div>
+        <button class="btn-primary-sm">Play</button>
+      </div>
+
+      <div class="new-card">
+        <div class="new-thumb-sm th-beat">🎸</div>
+        <div class="new-info">
+          <div class="new-title">Groove Battle</div>
+          <div class="new-genre">Music</div>
+          <span class="new-badge">✨ New</span>
+        </div>
+        <button class="btn-primary-sm">Play</button>
+      </div>
+
+      <div class="new-card">
+        <div class="new-thumb-sm th-karts">🛸</div>
+        <div class="new-info">
+          <div class="new-title">Meteor Dash</div>
+          <div class="new-genre">Racing</div>
+          <span class="new-badge">✨ New</span>
+        </div>
+        <button class="btn-primary-sm">Play</button>
+      </div>
+
+      <div class="new-card">
+        <div class="new-thumb-sm th-ninja">🐉</div>
+        <div class="new-info">
+          <div class="new-title">Dragon Path</div>
+          <div class="new-genre">Adventure</div>
+          <span class="new-badge">✨ New</span>
+        </div>
+        <button class="btn-primary-sm">Play</button>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <span class="logo-dot"></span>
+          Bubble Arcade
+        </a>
+        <p>The best free HTML5 game portal on the web. No downloads, no ads interrupting gameplay — just pure fun, forever free.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Games</h4>
+        <ul>
+          <li><a href="#">Popular</a></li>
+          <li><a href="#">New Games</a></li>
+          <li><a href="#">Categories</a></li>
+          <li><a href="#">Leaderboards</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Play</a></li>
+          <li><a href="#">Parents Guide</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Bubble Arcade. All rights reserved.</span>
+      <span>Made with ❤️ for players everywhere</span>
+    </div>
+  </footer>
+
+  <script>
+    function setActive(el) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    // Scroll-triggered reveal for game cards
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.game-card, .new-card').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(24px)';
+      el.style.transition = 'opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1)';
+      observer.observe(el);
+    });
+
+    const scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = entry.target.classList.contains('new-card')
+            ? '' : entry.target.style.transform.includes('rotate') ? entry.target.style.transform : '';
+        }
+      });
+    }, { threshold: 0.12 });
+
+    // Simple staggered reveal on scroll
+    document.querySelectorAll('.game-card, .new-card').forEach((el, i) => {
+      el.style.transitionDelay = `${i * 0.07}s`;
+      scrollObserver.observe(el);
+    });
+  </script>
+
+</body>
+</html>
