@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sky Surfer – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .info-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .info-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-list li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-list kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Sky Surfer</h2>
+      <p>Vola il più lontano possibile schivando i tubi! Tocca o premi Spazio per battere le ali.</p>
+      <div class="info-box">
+        <h3>🎮 Controlli</h3>
+        <ul class="controls-list" id="controlsList">
+          <li><kbd>Spazio</kbd> / <kbd>Tocca</kbd> — Batti le ali</li>
+          <li>Schiva i tubi e vola lontano!</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Sky Surfer</div>
+            <div class="overlay-sub">Quante pipe riesci a superare?</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale <span class="arrow"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    const GAME_ID = 'sky-surfer';
+    const scoreEl       = document.getElementById('scoreDisplay');
+    const overlayIdle   = document.getElementById('overlayIdle');
+    const overlayGO     = document.getElementById('overlayGameover');
+    const finalScoreEl  = document.getElementById('finalScore');
+    const hsBadge       = document.getElementById('newHighScoreBadge');
+
+    const canvas = document.getElementById('gameCanvas');
+
+    // ── LOGICA DI GIOCO QUI ──
+
+    // === SPRITE BIRD ===
+    const BIRD_DEF = {
+      scale: 3,
+      palette: ['#f5c842','#e8a020','#ff6b35','#1a1a2e','#ffffff'],
+      frames: [
+        // frame 0: ali giù
+        [[0,0,2,2,2,0,0,0],[0,2,1,1,1,2,0,0],[0,2,1,1,1,2,0,0],[0,0,2,1,2,0,5,0],[0,0,2,2,2,0,0,0],[3,2,1,1,0,0,0,0],[0,3,2,0,0,0,0,0]],
+        // frame 1: ali su
+        [[0,0,0,0,0,0,0,0],[0,2,2,2,2,2,0,0],[0,2,1,1,1,2,0,0],[0,0,2,1,2,0,5,0],[0,0,2,2,2,0,0,0],[3,2,1,1,0,0,0,0],[3,2,0,0,0,0,0,0]]
+      ]
+    };
+    // Correggi palette (5 colori, indici 1-5)
+    BIRD_DEF.palette = ['#f5c842','#e8a020','#ff6b35','#1a1a2e','#ffffff'];
+
+    const BIRD_SPRITES = Sprites.prerender(BIRD_DEF);
+
+    // === COSTANTI ===
+    const GAME_W = 480, GAME_H = 640;
+    const PIPE_W = 56, PIPE_SPEED = 180, GRAVITY = 800, JUMP_VY = -320;
+
+    // Stelle per sfondo
+    const STARS = Array.from({length: 40}, () => ({
+      x: Math.random() * GAME_W,
+      y: Math.random() * GAME_H,
+      r: Math.random() * 1.5 + 0.5,
+      speed: Math.random() * 15 + 8
+    }));
+
+    // === GAME OBJECT ===
+    const Game = {
+      state: 'idle',
+      bird: { x: 100, y: 300, vy: 0 },
+      pipes: [],
+      pipeTimer: 0,
+      score: 0,
+      flapTimer: 0,
+      animFrame: 0,
+
+      reset() {
+        this.bird = { x: 100, y: 300, vy: 0 };
+        this.pipes = [];
+        this.pipeTimer = 0;
+        this.score = 0;
+        this.flapTimer = 0;
+        this.animFrame = 0;
+        scoreEl.textContent = '0';
+      },
+
+      _flap() {
+        if (this.state !== 'playing') return;
+        this.bird.vy = JUMP_VY;
+        this.flapTimer = 0.2;
+        BubbleEngine.audio.beep(440, 0.06, 'sine', 0.4);
+      },
+
+      update(dt) {
+        if (this.state !== 'playing') return;
+
+        this.animFrame += dt * 8;
+        this.flapTimer = Math.max(0, this.flapTimer - dt);
+
+        // Muovi stelle
+        STARS.forEach(s => { s.x -= s.speed * dt; if (s.x < 0) s.x = GAME_W; });
+
+        // Fisica uccello
+        this.bird.vy += GRAVITY * dt;
+        this.bird.y  += this.bird.vy * dt;
+
+        // Input
+        if (BubbleEngine.input.justPressed.has('Space') ||
+            BubbleEngine.input.pointer.justDown) {
+          this._flap();
+        }
+
+        // Genera tubi
+        this.pipeTimer += dt;
+        if (this.pipeTimer > 1.6) {
+          this.pipeTimer = 0;
+          const gap = Math.max(120, 180 - this.score * 3);
+          const gapY = BubbleEngine.utils.randInt(100, GAME_H - 100 - gap);
+          this.pipes.push({ x: GAME_W + PIPE_W, gapY, gap, scored: false });
+        }
+
+        // Muovi tubi + punteggio
+        for (const p of this.pipes) {
+          p.x -= PIPE_SPEED * dt;
+          if (!p.scored && p.x + PIPE_W < this.bird.x) {
+            p.scored = true;
+            this.score++;
+            scoreEl.textContent = this.score;
+            BubbleEngine.audio.beep(660, 0.08, 'sine', 0.5);
+          }
+        }
+        this.pipes = this.pipes.filter(p => p.x > -PIPE_W - 20);
+
+        // Collisioni
+        const bx = this.bird.x - 12, by = this.bird.y - 12;
+        if (this.bird.y > GAME_H - 22 || this.bird.y < 10) return this._die();
+        for (const p of this.pipes) {
+          if (BubbleEngine.utils.AABB(bx, by, 24, 24, p.x, 0, PIPE_W, p.gapY) ||
+              BubbleEngine.utils.AABB(bx, by, 24, 24, p.x, p.gapY + p.gap, PIPE_W, GAME_H)) {
+            return this._die();
+          }
+        }
+      },
+
+      _die() {
+        this.state = 'dead';
+        BubbleEngine.audio.noise(0.3, 0.6);
+        setTimeout(() => showGameOver(this.score), 600);
+      },
+
+      render(ctx) {
+        // Cielo notturno
+        const sky = ctx.createLinearGradient(0, 0, 0, GAME_H);
+        sky.addColorStop(0, '#0d0514');
+        sky.addColorStop(0.6, '#1a0a2e');
+        sky.addColorStop(1, '#2d0b7a');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+        // Stelle
+        STARS.forEach(s => {
+          const alpha = 0.4 + (s.r / 2) * 0.5;
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Tubi
+        this.pipes.forEach(p => {
+          const g = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
+          g.addColorStop(0, '#15803d');
+          g.addColorStop(0.4, '#4ade80');
+          g.addColorStop(1, '#15803d');
+          ctx.fillStyle = g;
+          // Tubo superiore
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(p.x - 2, 0, PIPE_W + 4, p.gapY - 8, [0,0,6,6]);
+          else ctx.rect(p.x - 2, 0, PIPE_W + 4, p.gapY - 8);
+          ctx.fill();
+          // Cappello superiore
+          ctx.fillRect(p.x - 6, p.gapY - 20, PIPE_W + 12, 16);
+          // Tubo inferiore
+          const botY = p.gapY + p.gap;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(p.x - 2, botY + 8, PIPE_W + 4, GAME_H - botY, [6,6,0,0]);
+          else ctx.rect(p.x - 2, botY + 8, PIPE_W + 4, GAME_H - botY);
+          ctx.fill();
+          // Cappello inferiore
+          ctx.fillRect(p.x - 6, botY + 4, PIPE_W + 12, 16);
+        });
+
+        // Terreno
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(0, GAME_H - 20, GAME_W, 20);
+
+        // Uccello (con tilt basato sulla velocità verticale)
+        const birdFrame = this.flapTimer > 0 ? 1 : 0;
+        const tilt = BubbleEngine.utils.clamp(this.bird.vy / 400, -0.5, 0.9);
+        ctx.save();
+        ctx.translate(this.bird.x, this.bird.y);
+        ctx.rotate(tilt);
+        // Sprite bird è 8x7 px * scale 3 = 24x21 px, centra
+        Sprites.blit(ctx, BIRD_SPRITES, birdFrame, -12, -10);
+        ctx.restore();
+      }
+    };
+
+    BubbleEngine.init(canvas, { width: GAME_W, height: GAME_H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+    function showGameOver(score) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, score);
+      BubbleScores.save(GAME_ID, score);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = score.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>
