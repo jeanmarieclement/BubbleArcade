@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turbo Karts – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .controls-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .controls-box h3, .leaderboard-box h3 {
+      font-size: .75rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-box ul { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-box li, .leaderboard-box li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-box kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+
+    <!-- Sidebar sinistra -->
+    <aside class="sidebar">
+      <h2>Turbo Karts</h2>
+      <p>Sfreccia sulla pista a tutta velocità! Cambia corsia per evitare le auto avversarie e sopravvivi il più a lungo possibile.</p>
+      <div class="controls-box">
+        <h3>Controlli</h3>
+        <ul>
+          <li><kbd>←</kbd> / <kbd>→</kbd> — Cambia corsia</li>
+          <li>Evita le auto avversarie!</li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Canvas centrale -->
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Turbo Karts</div>
+            <div class="overlay-sub">Evita le auto e vai più lontano che puoi!</div>
+            <button class="btn-primary" id="btnStart">Inizia Partita</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-sub">Auto sfiorate:</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Indietro</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar destra -->
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    // ── Polyfill roundRect ──
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.rect(x, y, w, h);
+        return this;
+      };
+    }
+
+    // ── Costanti globali ──
+    const W = 480, H = 640;
+    const GAME_ID = 'turbo-karts';
+
+    const HORIZON_Y = 220;
+    const STRIPS = 80;
+    const ROAD_BASE_W = 360;
+    const LANE_XS = [W * 0.28, W * 0.5, W * 0.72];
+    const PLAYER_Y = H - 60;
+    const COLLISION_Z = 0.15;
+
+    // ── Elementi DOM ──
+    const canvas       = document.getElementById('gameCanvas');
+    const scoreEl      = document.getElementById('scoreDisplay');
+    const overlayIdle  = document.getElementById('overlayIdle');
+    const overlayGO    = document.getElementById('overlayGameover');
+    const finalScoreEl = document.getElementById('finalScore');
+    const hsBadge      = document.getElementById('newHighScoreBadge');
+    const btnStart     = document.getElementById('btnStart');
+    const btnRestart   = document.getElementById('btnRestart');
+
+    // ── Engine init ──
+    BubbleEngine.init(canvas, { width: W, height: H });
+
+    // ── Stato di gioco ──
+    let score       = 0;
+    let lives       = 3;
+    let playerLane  = 1;        // 0=sinistra, 1=centro, 2=destra
+    let playerX     = LANE_XS[1];
+    let cameraZ     = 0;
+    let obstacles   = [];
+    let spawnTimer  = 0;
+    let dyingTimer  = 0;        // secondi di pausa dopo morte
+    let isDying     = false;
+    let gameRunning = false;
+
+    // Alberi/pali fissi (scenografia) — z fissi ruotanti con cameraZ
+    const SCENERY_ZS = [0.1, 0.25, 0.42, 0.58, 0.75, 0.9];
+
+    // ── Utility ──
+    function getSpeed()         { return Math.min(1.5, 0.4 + score * 0.003); }
+    function getSpawnInterval() { return Math.max(0.6, 1.5 - score * 0.01); }
+
+    // ── Rendering ──
+    function renderSky(ctx) {
+      const grad = ctx.createLinearGradient(0, 0, 0, HORIZON_Y);
+      grad.addColorStop(0, '#1a0a2e');
+      grad.addColorStop(1, '#38bdf8');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, HORIZON_Y);
+
+      // Sole / luna stilizzato
+      ctx.fillStyle = 'rgba(255,240,180,0.55)';
+      ctx.beginPath();
+      ctx.arc(W * 0.72, 60, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,220,0.35)';
+      ctx.beginPath();
+      ctx.arc(W * 0.72, 60, 38, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stelle fisse (piccoli punti)
+      const stars = [
+        [40, 30], [120, 15], [200, 45], [300, 20], [380, 55],
+        [70, 80], [160, 90], [260, 70], [340, 100], [440, 40]
+      ];
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      for (const [sx, sy] of stars) {
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+    }
+
+    function renderRoad(ctx) {
+      for (let i = 0; i < STRIPS; i++) {
+        const t = i / STRIPS;
+        const stripH = (H - HORIZON_Y) / STRIPS;
+        const y = H - i * stripH;
+        const w = ROAD_BASE_W * (1 - t * 0.85);
+        const x = W / 2 - w / 2;
+        const seg = Math.floor((cameraZ * 0.3 + i) % 16);
+        const roadColor = seg < 8 ? '#3a3a3a' : '#444444';
+        ctx.fillStyle = roadColor;
+        ctx.fillRect(x, y - stripH, w, stripH + 1);
+
+        // Bordi bianchi
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x, y - stripH, 4, stripH + 1);
+        ctx.fillRect(x + w - 4, y - stripH, 4, stripH + 1);
+
+        // Linea tratteggiata centrale gialla
+        if (seg < 4) {
+          ctx.fillStyle = '#fdd400';
+          ctx.fillRect(W / 2 - 2, y - stripH, 4, stripH + 1);
+        }
+      }
+    }
+
+    function renderGrass(ctx) {
+      // Erba ai lati (fuori dalla strada) sotto l'orizzonte
+      // Sinistra
+      const leftRoadX_bottom = W / 2 - ROAD_BASE_W / 2;
+      const leftRoadX_horiz  = W / 2 - (ROAD_BASE_W * (1 - 0.85)) / 2;
+      ctx.fillStyle = '#1a5c2a';
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      ctx.lineTo(leftRoadX_bottom, H);
+      ctx.lineTo(leftRoadX_horiz, HORIZON_Y);
+      ctx.lineTo(0, HORIZON_Y);
+      ctx.fill();
+
+      // Destra
+      const rightRoadX_bottom = W / 2 + ROAD_BASE_W / 2;
+      const rightRoadX_horiz  = W / 2 + (ROAD_BASE_W * (1 - 0.85)) / 2;
+      ctx.fillStyle = '#1a5c2a';
+      ctx.beginPath();
+      ctx.moveTo(W, H);
+      ctx.lineTo(rightRoadX_bottom, H);
+      ctx.lineTo(rightRoadX_horiz, HORIZON_Y);
+      ctx.lineTo(W, HORIZON_Y);
+      ctx.fill();
+    }
+
+    function renderScenery(ctx) {
+      // Alberi stilizzati ai bordi della strada (prospettiva)
+      for (const baseZ of SCENERY_ZS) {
+        // offset con cameraZ per far scorrere la scenografia
+        let z = ((baseZ - (cameraZ * 0.01) % 1) + 1) % 1;
+        if (z < 0.02) continue; // troppo vicino/lontano
+
+        const scale = 1 - z;
+        const yPos = H - (H - HORIZON_Y) * scale;
+
+        // offset rispetto al bordo strada
+        const roadHalfW = (ROAD_BASE_W * (1 - z * 0.85)) / 2;
+        const roadCenterX = W / 2;
+        const treeH = 40 * scale;
+        const treeW = 14 * scale;
+        const trunkH = 12 * scale;
+        const trunkW = 4 * scale;
+
+        const alpha = Math.min(1, scale * 2);
+        ctx.globalAlpha = alpha;
+
+        // Albero sinistro
+        const lx = roadCenterX - roadHalfW - 20 * scale;
+        ctx.fillStyle = '#5c3d1e';
+        ctx.fillRect(lx - trunkW / 2, yPos - trunkH, trunkW, trunkH);
+        ctx.fillStyle = '#2d6a2d';
+        ctx.beginPath();
+        ctx.arc(lx, yPos - trunkH - treeH * 0.4, treeW * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Albero destro
+        const rx = roadCenterX + roadHalfW + 20 * scale;
+        ctx.fillStyle = '#5c3d1e';
+        ctx.fillRect(rx - trunkW / 2, yPos - trunkH, trunkW, trunkH);
+        ctx.fillStyle = '#2d6a2d';
+        ctx.beginPath();
+        ctx.arc(rx, yPos - trunkH - treeH * 0.4, treeW * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function renderObstacle(ctx, obs) {
+      const z = obs.z;
+      const scale = 1 - z;
+      if (scale <= 0) return;
+
+      const scX = W / 2 + (LANE_XS[obs.lane] - W / 2) * scale;
+      const scY = H - (H - HORIZON_Y) * scale;
+      const carW = 54 * scale;
+      const carH = 36 * scale;
+
+      const colors = ['#dc2626', '#3b82f6', '#f97316'];
+      const bodyColor = colors[obs.lane];
+
+      ctx.save();
+      // Carrozzeria principale
+      ctx.fillStyle = bodyColor;
+      ctx.beginPath();
+      ctx.roundRect(scX - carW / 2, scY - carH, carW, carH, 4 * scale);
+      ctx.fill();
+
+      // Finestrino
+      ctx.fillStyle = 'rgba(180,230,255,0.7)';
+      ctx.fillRect(scX - carW * 0.28, scY - carH * 0.85, carW * 0.56, carH * 0.3);
+
+      // Ruote
+      ctx.fillStyle = '#1a1a2e';
+      const wW = 7 * scale, wH = 10 * scale;
+      ctx.fillRect(scX - carW / 2 - wW * 0.4, scY - carH * 0.75, wW, wH); // ant-sx
+      ctx.fillRect(scX + carW / 2 - wW * 0.6, scY - carH * 0.75, wW, wH); // ant-dx
+      ctx.fillRect(scX - carW / 2 - wW * 0.4, scY - carH * 0.3,  wW, wH); // post-sx
+      ctx.fillRect(scX + carW / 2 - wW * 0.6, scY - carH * 0.3,  wW, wH); // post-dx
+
+      ctx.restore();
+    }
+
+    function drawPlayerCar(ctx, x, y) {
+      ctx.fillStyle = '#26e6ff';
+      ctx.fillRect(x - 22, y - 30, 44, 50);
+
+      ctx.fillStyle = '#0a4a5a';
+      ctx.fillRect(x - 16, y - 26, 32, 18);
+
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(x - 26, y - 20, 8, 14);
+      ctx.fillRect(x + 18, y - 20, 8, 14);
+      ctx.fillRect(x - 26, y + 8,  8, 14);
+      ctx.fillRect(x + 18, y + 8,  8, 14);
+    }
+
+    function renderHUD(ctx) {
+      // Vite rimaste
+      ctx.fillStyle = '#ff4466';
+      ctx.font = `bold ${18}px sans-serif`;
+      ctx.textAlign = 'left';
+      for (let i = 0; i < lives; i++) {
+        ctx.fillText('♥', 12 + i * 24, 30);
+      }
+
+      // Velocità
+      const speed = getSpeed();
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(W - 90, 12, 78, 22);
+      ctx.fillStyle = '#fdd400';
+      ctx.font = `bold 13px monospace`;
+      ctx.textAlign = 'right';
+      ctx.fillText(`VEL ${(speed * 100).toFixed(0)} km/h`, W - 14, 27);
+
+      // Flash rosso quando morendo
+      if (isDying) {
+        ctx.fillStyle = `rgba(220,0,0,${0.3 * Math.sin(Date.now() / 60)})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    // ── Update / render callbacks ──
+    function update(dt) {
+      if (!gameRunning) return;
+
+      // Pausa morte
+      if (isDying) {
+        dyingTimer -= dt;
+        if (dyingTimer <= 0) {
+          isDying = false;
+          lives -= 1;
+          if (lives > 0) {
+            obstacles = [];
+            spawnTimer = 0;
+          } else {
+            showGameOver(score);
+          }
+        }
+        return;
+      }
+
+      const speed = getSpeed();
+
+      // Input
+      if (BubbleEngine.input.justPressed.has('ArrowLeft'))  playerLane = Math.max(0, playerLane - 1);
+      if (BubbleEngine.input.justPressed.has('ArrowRight')) playerLane = Math.min(2, playerLane + 1);
+
+      // Movimento player X fluido
+      playerX = BubbleEngine.utils.lerp(playerX, LANE_XS[playerLane], 12 * dt);
+
+      // Camera (animazione strisce)
+      cameraZ += speed * 60 * dt;
+
+      // Aggiornamento ostacoli
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        const prevZ = obs.z;
+        obs.z -= speed * dt;
+
+        // Controllo collisione (crossing di 0.15)
+        if (prevZ >= COLLISION_Z && obs.z < COLLISION_Z) {
+          if (obs.lane === playerLane) {
+            onCollision();
+            return;
+          }
+        }
+
+        // Sorpassato → punteggio
+        if (obs.z < 0) {
+          obstacles.splice(i, 1);
+          score += 1;
+          scoreEl.textContent = score;
+          BubbleEngine.audio.beep(660, 0.06, 'square', 0.2);
+        }
+      }
+
+      // Spawn ostacoli
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnTimer = getSpawnInterval();
+        spawnObstacles();
+      }
+    }
+
+    function render(ctx) {
+      // Cielo
+      renderSky(ctx);
+      // Erba
+      renderGrass(ctx);
+      // Strada
+      renderRoad(ctx);
+      // Scenografia
+      renderScenery(ctx);
+
+      // Ostacoli (ordinati per z decrescente → i più lontani prima)
+      const sorted = [...obstacles].sort((a, b) => b.z - a.z);
+      for (const obs of sorted) {
+        renderObstacle(ctx, obs);
+      }
+
+      // Auto giocatore
+      drawPlayerCar(ctx, playerX, PLAYER_Y);
+
+      // HUD
+      renderHUD(ctx);
+    }
+
+    // ── Logica spawn ──
+    function spawnObstacles() {
+      const count = Math.random() < 0.4 ? 2 : 1;
+      const lanes = [0, 1, 2];
+      // shuffle
+      for (let i = lanes.length - 1; i > 0; i--) {
+        const j = BubbleEngine.utils.randInt(0, i);
+        [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+      }
+      for (let k = 0; k < count; k++) {
+        obstacles.push({ lane: lanes[k], z: 1.0 });
+      }
+    }
+
+    // ── Collisione ──
+    function onCollision() {
+      BubbleEngine.audio.noise(0.4, 0.6);
+      isDying = true;
+      dyingTimer = 0.8;
+    }
+
+    // ── Reset partita ──
+    function resetGame() {
+      score       = 0;
+      lives       = 3;
+      playerLane  = 1;
+      playerX     = LANE_XS[1];
+      cameraZ     = 0;
+      obstacles   = [];
+      spawnTimer  = 1.0;
+      dyingTimer  = 0;
+      isDying     = false;
+      scoreEl.textContent = '0';
+    }
+
+    // ── Game Over ──
+    function showGameOver(finalScore) {
+      gameRunning = false;
+      BubbleEngine.loop.stop();
+
+      const isNew = BubbleScores.save(GAME_ID, finalScore);
+
+      finalScoreEl.textContent = finalScore;
+      hsBadge.classList.toggle('hidden', !isNew);
+      overlayGO.classList.remove('hidden');
+
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'), {
+        rankClass:  'lb-rank',
+        nameClass:  'lb-name',
+        scoreClass: 'lb-score',
+        emptyClass: 'lb-empty',
+        emptyText:  'Nessun punteggio',
+      });
+    }
+
+    // ── Pulsanti ──
+    btnStart.addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      resetGame();
+      gameRunning = true;
+      BubbleEngine.loop.start();
+
+      // Carica classifica iniziale
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'), {
+        rankClass:  'lb-rank',
+        nameClass:  'lb-name',
+        scoreClass: 'lb-score',
+        emptyClass: 'lb-empty',
+        emptyText:  'Nessun punteggio',
+      });
+    });
+
+    btnRestart.addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      resetGame();
+      gameRunning = true;
+      BubbleEngine.loop.start();
+    });
+
+    // ── Registra callbacks ──
+    BubbleEngine.setCallbacks(update, render);
+
+    // Classifica iniziale
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'), {
+      rankClass:  'lb-rank',
+      nameClass:  'lb-name',
+      scoreClass: 'lb-score',
+      emptyClass: 'lb-empty',
+      emptyText:  'Nessun punteggio',
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meteor Dash – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .info-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .info-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-list li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-list kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+    .hidden { display: none !important; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Meteor Dash</h2>
+      <p>Distruggi tutti i meteoriti per avanzare all'ondata successiva. Attento alla tua nave!</p>
+      <div class="info-box">
+        <h3>🎮 Controlli</h3>
+        <ul class="controls-list">
+          <li><kbd>←</kbd> <kbd>→</kbd> Ruota</li>
+          <li><kbd>↑</kbd> Accelera</li>
+          <li><kbd>Spazio</kbd> Spara</li>
+        </ul>
+      </div>
+      <div class="info-box">
+        <h3>⭐ Punteggio</h3>
+        <ul class="controls-list">
+          <li>Meteorite grande: <strong>20 pt</strong></li>
+          <li>Meteorite medio: <strong>50 pt</strong></li>
+          <li>Meteorite piccolo: <strong>100 pt</strong></li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Meteor Dash</div>
+            <div class="overlay-sub">Distruggi tutti i meteoriti!</div>
+            <button class="btn-primary" id="btnStart">Inizia Partita</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale <span class="arrow"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    // ── roundRect polyfill ─────────────────────────────────────────────────
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.rect(x, y, w, h);
+        return this;
+      };
+    }
+
+    // ── Constants ────────────────────────────────────────────────────────────
+    const GAME_ID = 'meteor-dash';
+    const W = 480, H = 480;
+
+    const scoreEl      = document.getElementById('scoreDisplay');
+    const overlayIdle  = document.getElementById('overlayIdle');
+    const overlayGO    = document.getElementById('overlayGameover');
+    const finalScoreEl = document.getElementById('finalScore');
+    const hsBadge      = document.getElementById('newHighScoreBadge');
+
+    const canvas = document.getElementById('gameCanvas');
+    BubbleEngine.init(canvas, { width: W, height: H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+    const { randFloat, randInt } = BubbleEngine.utils;
+
+    // ── Star field (static, generated once) ─────────────────────────────────
+    const STARS = Array.from({ length: 50 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.2 + 0.3,
+      alpha: Math.random() * 0.6 + 0.2
+    }));
+
+    // ── Asteroid sizes ───────────────────────────────────────────────────────
+    const AST_SIZES = {
+      large:  { r: 40, score: 20,  next: 'medium' },
+      medium: { r: 22, score: 50,  next: 'small'  },
+      small:  { r: 12, score: 100, next: null      }
+    };
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function makeAsteroid(x, y, size) {
+      const def = AST_SIZES[size];
+      const speed = randFloat(30, 80) * (size === 'large' ? 1 : size === 'medium' ? 1.3 : 1.6);
+      const angle = Math.random() * Math.PI * 2;
+      return {
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: def.r,
+        size,
+        rot: 0,
+        rotSpeed: randFloat(-1.2, 1.2),
+        points: Array.from({ length: 8 }, (_, i) => i / 8 * Math.PI * 2),
+        jitter: Array.from({ length: 8 }, () => Math.random())
+      };
+    }
+
+    function spawnWaveAsteroids(wave, list) {
+      const count = 5 + (wave - 1);
+      for (let i = 0; i < count; i++) {
+        // Place on edges, away from center
+        let x, y;
+        const edge = randInt(0, 3);
+        if (edge === 0)      { x = Math.random() * W; y = 0; }
+        else if (edge === 1) { x = W; y = Math.random() * H; }
+        else if (edge === 2) { x = Math.random() * W; y = H; }
+        else                 { x = 0; y = Math.random() * H; }
+        list.push(makeAsteroid(x, y, 'large'));
+      }
+    }
+
+    function wrapEntity(e) {
+      e.x = ((e.x % W) + W) % W;
+      e.y = ((e.y % H) + H) % H;
+    }
+
+    function dist(a, b) {
+      const dx = a.x - b.x, dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function spawnParticles(x, y, list) {
+      for (let i = 0; i < 6; i++) {
+        list.push({
+          x, y,
+          vx: randFloat(-80, 80),
+          vy: randFloat(-80, 80),
+          life: 0.8,
+          maxLife: 0.8,
+          color: Math.random() < 0.5 ? '#baa4d3' : '#fdd400'
+        });
+      }
+    }
+
+    // ── Draw helpers ─────────────────────────────────────────────────────────
+    function drawShip(ctx, x, y, angle, thrusting) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.strokeStyle = '#26e6ff';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#26e6ff';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.lineTo(-9, 10);
+      ctx.lineTo(-4, 6);
+      ctx.lineTo(4, 6);
+      ctx.lineTo(9, 10);
+      ctx.closePath();
+      ctx.stroke();
+      if (thrusting) {
+        ctx.shadowColor = '#fdd400';
+        ctx.shadowBlur = 6;
+        ctx.strokeStyle = '#fdd400';
+        ctx.beginPath();
+        ctx.moveTo(-4, 7);
+        ctx.lineTo(0, 14 + Math.random() * 8);
+        ctx.lineTo(4, 7);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawAsteroid(ctx, ast) {
+      ctx.save();
+      ctx.translate(ast.x, ast.y);
+      ctx.rotate(ast.rot);
+      ctx.strokeStyle = '#baa4d3';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#baa4d3';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ast.points.forEach((angle, i) => {
+        const jr = ast.r * (0.75 + ast.jitter[i] * 0.5);
+        const px = Math.cos(angle) * jr;
+        const py = Math.sin(angle) * jr;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMiniShip(ctx, x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = '#26e6ff';
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = '#26e6ff';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, -7);
+      ctx.lineTo(-5, 5);
+      ctx.lineTo(-2, 3);
+      ctx.lineTo(2, 3);
+      ctx.lineTo(5, 5);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Game state ────────────────────────────────────────────────────────────
+    const Game = {
+      state: 'idle',
+      score: 0,
+      lives: 3,
+      wave: 1,
+      waveTimer: 0,   // countdown before next wave spawns
+      ship: null,
+      asteroids: [],
+      bullets: [],
+      particles: [],
+      shootCooldown: 0,
+      extraLifeThreshold: 5000,
+
+      reset() {
+        Game.score = 0;
+        Game.lives = 3;
+        Game.wave = 1;
+        Game.waveTimer = 0;
+        Game.asteroids = [];
+        Game.bullets = [];
+        Game.particles = [];
+        Game.shootCooldown = 0;
+        Game.extraLifeThreshold = 5000;
+        Game.ship = {
+          x: W / 2, y: H / 2,
+          vx: 0, vy: 0,
+          angle: 0,
+          dead: false,
+          invTimer: 3,   // invincibility seconds
+          respawnTimer: 0
+        };
+        spawnWaveAsteroids(1, Game.asteroids);
+        scoreEl.textContent = '0';
+      },
+
+      killShip() {
+        const s = Game.ship;
+        spawnParticles(s.x, s.y, Game.particles);
+        // More dramatic explosion for ship
+        for (let i = 0; i < 8; i++) {
+          Game.particles.push({
+            x: s.x, y: s.y,
+            vx: randFloat(-120, 120),
+            vy: randFloat(-120, 120),
+            life: 1.0,
+            maxLife: 1.0,
+            color: '#26e6ff'
+          });
+        }
+        BubbleEngine.audio.noise(0.3, 0.8);
+
+        Game.lives--;
+        if (Game.lives <= 0) {
+          Game.ship.dead = true;
+          // defer game over to next frame so particles can be seen briefly
+          Game.state = 'dying';
+          Game.waveTimer = 1.5; // reuse as dying timer
+        } else {
+          // respawn at center with invincibility
+          s.x = W / 2; s.y = H / 2;
+          s.vx = 0; s.vy = 0;
+          s.angle = 0;
+          s.invTimer = 3;
+        }
+      },
+
+      update(dt) {
+        if (Game.state === 'dying') {
+          Game.waveTimer -= dt;
+          // Update particles only
+          for (let i = Game.particles.length - 1; i >= 0; i--) {
+            const p = Game.particles[i];
+            p.life -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            if (p.life <= 0) Game.particles.splice(i, 1);
+          }
+          if (Game.waveTimer <= 0) {
+            showGameOver(Game.score);
+          }
+          return;
+        }
+
+        const keys = BubbleEngine.input.keys;
+        const jp   = BubbleEngine.input.justPressed;
+        const s    = Game.ship;
+
+        // ── Ship movement ──────────────────────────────────────
+        const ROT_SPEED = Math.PI / 2; // 90 deg/s
+        if (keys.has('ArrowLeft'))  s.angle -= ROT_SPEED * dt;
+        if (keys.has('ArrowRight')) s.angle += ROT_SPEED * dt;
+
+        const thrusting = keys.has('ArrowUp');
+        if (thrusting) {
+          s.vx += Math.cos(s.angle - Math.PI / 2) * 250 * dt;
+          s.vy += Math.sin(s.angle - Math.PI / 2) * 250 * dt;
+          if (Math.random() < 0.3) {
+            BubbleEngine.audio.beep(80, 0.04, 'sawtooth', 0.15);
+          }
+        }
+
+        // Speed cap
+        const spd = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+        if (spd > 350) { s.vx = s.vx / spd * 350; s.vy = s.vy / spd * 350; }
+
+        // Drag
+        s.vx *= (1 - 0.5 * dt);
+        s.vy *= (1 - 0.5 * dt);
+
+        // Move & wrap
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        wrapEntity(s);
+
+        // Invincibility countdown
+        if (s.invTimer > 0) s.invTimer -= dt;
+
+        // ── Shooting ────────────────────────────────────────────
+        Game.shootCooldown -= dt;
+        if ((keys.has('Space') || jp.has('Space')) && Game.shootCooldown <= 0 && Game.bullets.length < 4) {
+          Game.bullets.push({
+            x: s.x + Math.cos(s.angle - Math.PI / 2) * 16,
+            y: s.y + Math.sin(s.angle - Math.PI / 2) * 16,
+            vx: Math.cos(s.angle - Math.PI / 2) * 450 + s.vx,
+            vy: Math.sin(s.angle - Math.PI / 2) * 450 + s.vy,
+            life: 1.2
+          });
+          Game.shootCooldown = 0.25;
+          BubbleEngine.audio.beep(660, 0.06, 'square', 0.4);
+        }
+
+        // ── Update bullets ──────────────────────────────────────
+        for (let i = Game.bullets.length - 1; i >= 0; i--) {
+          const b = Game.bullets[i];
+          b.life -= dt;
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          wrapEntity(b);
+          if (b.life <= 0) Game.bullets.splice(i, 1);
+        }
+
+        // ── Update asteroids ─────────────────────────────────────
+        for (const ast of Game.asteroids) {
+          ast.x += ast.vx * dt;
+          ast.y += ast.vy * dt;
+          ast.rot += ast.rotSpeed * dt;
+          wrapEntity(ast);
+        }
+
+        // ── Bullet–asteroid collisions ───────────────────────────
+        for (let bi = Game.bullets.length - 1; bi >= 0; bi--) {
+          const b = Game.bullets[bi];
+          let hit = false;
+          for (let ai = Game.asteroids.length - 1; ai >= 0; ai--) {
+            const ast = Game.asteroids[ai];
+            if (dist(b, ast) < ast.r) {
+              // Hit!
+              hit = true;
+              const def = AST_SIZES[ast.size];
+              Game.score += def.score;
+              scoreEl.textContent = Game.score.toLocaleString('it-IT');
+
+              // Extra life check
+              if (Game.score >= Game.extraLifeThreshold) {
+                Game.lives++;
+                Game.extraLifeThreshold += 5000;
+                BubbleEngine.audio.beep(880, 0.3, 'sine', 0.5);
+              }
+
+              spawnParticles(ast.x, ast.y, Game.particles);
+              BubbleEngine.audio.noise(0.12, 0.5);
+
+              // Split or destroy
+              if (def.next) {
+                const nextSize = def.next;
+                Game.asteroids.push(makeAsteroid(ast.x, ast.y, nextSize));
+                Game.asteroids.push(makeAsteroid(ast.x, ast.y, nextSize));
+              }
+
+              Game.asteroids.splice(ai, 1);
+              break;
+            }
+          }
+          if (hit) {
+            Game.bullets.splice(bi, 1);
+          }
+        }
+
+        // ── Ship–asteroid collisions (skip if invincible) ─────────
+        if (s.invTimer <= 0) {
+          for (let ai = Game.asteroids.length - 1; ai >= 0; ai--) {
+            const ast = Game.asteroids[ai];
+            if (dist(s, ast) < ast.r + 10) {
+              Game.killShip();
+              break;
+            }
+          }
+        }
+
+        // ── Update particles ─────────────────────────────────────
+        for (let i = Game.particles.length - 1; i >= 0; i--) {
+          const p = Game.particles[i];
+          p.life -= dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          if (p.life <= 0) Game.particles.splice(i, 1);
+        }
+
+        // ── Wave clear check ─────────────────────────────────────
+        if (Game.asteroids.length === 0) {
+          if (Game.waveTimer <= 0) {
+            Game.waveTimer = 1.5;
+          } else {
+            Game.waveTimer -= dt;
+            if (Game.waveTimer <= 0) {
+              Game.wave++;
+              spawnWaveAsteroids(Game.wave, Game.asteroids);
+              Game.waveTimer = 0;
+              BubbleEngine.audio.beep(440, 0.1, 'sine', 0.4);
+              BubbleEngine.audio.beep(550, 0.1, 'sine', 0.4);
+            }
+          }
+        }
+      },
+
+      render(ctx) {
+        // 1. Black background
+        ctx.fillStyle = '#05010f';
+        ctx.fillRect(0, 0, W, H);
+
+        // 2. Stars
+        ctx.fillStyle = '#ffffff';
+        for (const st of STARS) {
+          ctx.globalAlpha = st.alpha;
+          ctx.beginPath();
+          ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // 3. Asteroids
+        ctx.shadowBlur = 0;
+        for (const ast of Game.asteroids) {
+          drawAsteroid(ctx, ast);
+        }
+
+        // 4. Bullets
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 4;
+        for (const b of Game.bullets) {
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.fillRect(-1, -3, 2, 6);
+          ctx.restore();
+        }
+        ctx.shadowBlur = 0;
+
+        // 5. Ship (skip if dead; flicker if invincible)
+        const s = Game.ship;
+        if (!s) return;
+        const showShip = !s.dead && (s.invTimer <= 0 || Math.floor(s.invTimer * 10) % 2 === 0);
+        if (showShip && Game.state === 'playing') {
+          const thrusting = BubbleEngine.input.keys.has('ArrowUp');
+          drawShip(ctx, s.x, s.y, s.angle, thrusting);
+        }
+
+        // 6. Particles
+        for (const p of Game.particles) {
+          ctx.globalAlpha = p.life / p.maxLife;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+        }
+        ctx.globalAlpha = 1;
+
+        // 7. HUD
+        ctx.shadowBlur = 0;
+
+        // Lives (mini ship icons, top-left)
+        for (let i = 0; i < Game.lives; i++) {
+          drawMiniShip(ctx, 18 + i * 18, 18);
+        }
+
+        // Wave number (top-center)
+        ctx.fillStyle = '#baa4d3';
+        ctx.font = '700 13px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ONDATA ' + Game.wave, W / 2, 22);
+
+        // Score (top-right)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 15px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(Game.score.toLocaleString('it-IT'), W - 12, 22);
+
+        // Wave clear message
+        if (Game.asteroids.length === 0 && Game.waveTimer > 0 && Game.state === 'playing') {
+          ctx.fillStyle = '#fdd400';
+          ctx.font = '800 22px "Plus Jakarta Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.shadowColor = '#fdd400';
+          ctx.shadowBlur = 12;
+          ctx.fillText('Ondata Completata!', W / 2, H / 2);
+          ctx.shadowBlur = 0;
+        }
+      }
+    };
+
+    // ── Game Over ─────────────────────────────────────────────────────────────
+    function showGameOver(score) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, score);
+      BubbleScores.save(GAME_ID, score);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = score.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    // ── Button handlers ───────────────────────────────────────────────────────
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>

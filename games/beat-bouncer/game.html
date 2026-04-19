@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beat Bouncer – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .controls-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .controls-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-box ul { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-box li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-box kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay.hidden { display: none; }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Beat Bouncer</h2>
+      <p>Colpisci le note al ritmo della musica! Usa D, F, J, K per le 4 corsie.</p>
+      <div class="controls-box">
+        <h3>🎮 Controlli</h3>
+        <ul>
+          <li><kbd>D</kbd> — Corsia 1</li>
+          <li><kbd>F</kbd> — Corsia 2</li>
+          <li><kbd>J</kbd> — Corsia 3</li>
+          <li><kbd>K</kbd> — Corsia 4</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Beat Bouncer</div>
+            <div class="overlay-sub">Colpisci le note nel momento giusto!</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    // Polyfill roundRect
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.rect(x, y, w, h);
+        return this;
+      };
+    }
+
+    const GAME_ID = 'beat-bouncer';
+    const W = 480, H = 640;
+
+    const scoreEl      = document.getElementById('scoreDisplay');
+    const overlayIdle  = document.getElementById('overlayIdle');
+    const overlayGO    = document.getElementById('overlayGameover');
+    const finalScoreEl = document.getElementById('finalScore');
+    const hsBadge      = document.getElementById('newHighScoreBadge');
+    const canvas       = document.getElementById('gameCanvas');
+
+    // ── Costanti gioco ──
+    const LANES = [
+      { x: 0,   key: 'KeyD', color: '#b60051', label: 'D' },
+      { x: 120, key: 'KeyF', color: '#26e6ff', label: 'F' },
+      { x: 240, key: 'KeyJ', color: '#fdd400', label: 'J' },
+      { x: 360, key: 'KeyK', color: '#4ade80', label: 'K' },
+    ];
+    const LANE_W        = 120;
+    const NOTE_W        = 110, NOTE_H = 28;
+    const HIT_Y         = 560;
+    const HIT_ZONE_H    = 44;
+    const NOTE_SPEED    = 300; // px/s
+    const PERFECT_WINDOW = 0.06; // seconds
+    const GOOD_WINDOW    = 0.12; // seconds
+    const NOTE_FREQS    = [261, 329, 392, 523]; // C4 E4 G4 C5
+
+    const PATTERN = [[0],[1],[2],[3],[0,2],[1,3],[0],[2],[1],[3],[0,1],[2,3]];
+
+    // ── Stato gioco ──
+    let score = 0, combo = 0, health = 100;
+    let notes = [], effects = [], beatTimer = 0, patternIdx = 0;
+    let beatInterval = 0.5, levelTimer = 0;
+    let playing = false;
+    let lastDt = 0; // used by render for effect animation
+
+    function resetGame() {
+      score = 0; combo = 0; health = 100;
+      notes = []; effects = []; beatTimer = 0; patternIdx = 0;
+      beatInterval = 0.5; levelTimer = 0;
+      scoreEl.textContent = '0';
+    }
+
+    // ── Funzioni hit/miss ──
+    function _hitNote(note, label, pts, laneIdx) {
+      note.hit = true;
+      combo++;
+      score += pts * Math.max(1, Math.floor(combo / 10));
+      scoreEl.textContent = score.toLocaleString('it-IT');
+      health = Math.min(100, health + (label === 'PERFECT' ? 3 : 1));
+      effects.push({
+        x: LANES[laneIdx].x + LANE_W / 2,
+        y: HIT_Y - 20,
+        text: label,
+        color: LANES[laneIdx].color,
+        life: 0.7,
+        vy: -90
+      });
+      BubbleEngine.audio.beep(NOTE_FREQS[laneIdx], 0.12, 'sine', 0.5);
+    }
+
+    function _miss(laneIdx) {
+      combo = 0;
+      health = Math.max(0, health - 10);
+      effects.push({
+        x: LANES[laneIdx].x + LANE_W / 2,
+        y: HIT_Y - 20,
+        text: 'MISS',
+        color: '#888',
+        life: 0.5,
+        vy: -60
+      });
+      BubbleEngine.audio.beep(100, 0.08, 'sawtooth', 0.3);
+      if (health <= 0) _die();
+    }
+
+    function _die() {
+      playing = false;
+      BubbleEngine.loop.stop();
+      showGameOver(score);
+    }
+
+    // ── Update ──
+    function update(dt) {
+      if (!playing) return;
+      lastDt = dt;
+
+      // Difficoltà crescente ogni 30s
+      levelTimer += dt;
+      if (levelTimer >= 30) {
+        levelTimer -= 30;
+        beatInterval = Math.max(0.2, beatInterval - 0.05);
+      }
+
+      // Spawn note
+      beatTimer += dt;
+      if (beatTimer >= beatInterval) {
+        beatTimer -= beatInterval;
+        const lanes = PATTERN[patternIdx % PATTERN.length];
+        lanes.forEach(lane => {
+          notes.push({ lane, y: -NOTE_H / 2, hit: false });
+        });
+        patternIdx++;
+      }
+
+      // Muovi note
+      notes.forEach(n => { n.y += NOTE_SPEED * dt; });
+
+      // Rimuovi note mancate
+      notes = notes.filter(n => {
+        if (!playing) return false;
+        if (!n.hit && n.y > HIT_Y + 60) {
+          _miss(n.lane);
+          return false;
+        }
+        return !n.hit;
+      });
+
+      // Input
+      const justPressed = BubbleEngine.input.justPressed;
+      LANES.forEach((lane, li) => {
+        if (justPressed.has(lane.key)) {
+          const notesInLane = notes.filter(n => n.lane === li && !n.hit);
+          const closest = notesInLane.reduce((best, n) => {
+            const err = Math.abs(n.y - HIT_Y) / NOTE_SPEED;
+            return (best === null || err < Math.abs(best.y - HIT_Y) / NOTE_SPEED) ? n : best;
+          }, null);
+          if (closest !== null) {
+            const err = Math.abs(closest.y - HIT_Y) / NOTE_SPEED;
+            if (err <= PERFECT_WINDOW)       _hitNote(closest, 'PERFECT', 100, li);
+            else if (err <= GOOD_WINDOW)     _hitNote(closest, 'GOOD',    50,  li);
+            else                             _miss(li);
+          } else {
+            _miss(li);
+          }
+        }
+      });
+    }
+
+    // ── Render ──
+    function render(ctx) {
+      // 1. Sfondo
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#1a0a2e');
+      bg.addColorStop(1, '#2d0b7a');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // 2. Strisce corsie
+      LANES.forEach((lane) => {
+        ctx.fillStyle = lane.color + '1a'; // ~10% opacità
+        ctx.fillRect(lane.x, 0, LANE_W, H);
+        ctx.fillStyle = lane.color + '33';
+        ctx.fillRect(lane.x + LANE_W - 1, 0, 1, H); // separatore
+      });
+
+      // 3. Zona hit
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillRect(0, HIT_Y - HIT_ZONE_H / 2, W, HIT_ZONE_H);
+
+      // Bagliore quando tasto premuto
+      LANES.forEach((lane) => {
+        if (BubbleEngine.input.keys.has(lane.key)) {
+          ctx.fillStyle = lane.color + '55';
+          ctx.fillRect(lane.x + 4, HIT_Y - HIT_ZONE_H / 2, LANE_W - 8, HIT_ZONE_H);
+        }
+        // Rettangolo ricevitore
+        ctx.strokeStyle = lane.color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(lane.x + 10, HIT_Y - 16, LANE_W - 20, 32);
+      });
+
+      // 4. Note in caduta
+      notes.filter(n => !n.hit).forEach(n => {
+        const lane = LANES[n.lane];
+        ctx.fillStyle = lane.color;
+        ctx.fillRect(lane.x + 5, n.y - NOTE_H / 2, NOTE_W, NOTE_H);
+        // Lucentezza
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(lane.x + 5, n.y - NOTE_H / 2, NOTE_W, 5);
+      });
+
+      // 5. Etichette tasti in basso
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 18px Plus Jakarta Sans, sans-serif';
+      LANES.forEach((lane) => {
+        ctx.fillStyle = lane.color;
+        ctx.fillText(lane.label, lane.x + LANE_W / 2, H - 12);
+      });
+
+      // 6. Barra della salute in cima (8px, piena larghezza)
+      const hPct = health / 100;
+      ctx.fillStyle = '#333';
+      ctx.fillRect(0, 0, W, 8);
+      ctx.fillStyle = health > 50 ? '#4ade80' : health > 25 ? '#fdd400' : '#dc2626';
+      ctx.fillRect(0, 0, W * hPct, 8);
+
+      // 7. Combo grande al centro (solo se >= 10)
+      if (combo >= 10) {
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = `bold ${Math.min(48, 20 + combo / 5)}px Plus Jakarta Sans, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${combo}x`, W / 2, H / 2);
+      }
+
+      // 8. Effetti fluttuanti (PERFECT / GOOD / MISS)
+      effects = effects.filter(e => e.life > 0);
+      effects.forEach(e => {
+        e.y += e.vy * lastDt;
+        e.life -= lastDt;
+        ctx.globalAlpha = Math.max(0, e.life);
+        ctx.fillStyle = e.color;
+        ctx.font = 'bold 14px Plus Jakarta Sans, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.text, e.x, e.y);
+        ctx.globalAlpha = 1;
+      });
+    }
+
+    // ── Game over ──
+    function showGameOver(finalScore) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, finalScore);
+      BubbleScores.save(GAME_ID, finalScore);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = finalScore.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    // ── Inizializzazione engine ──
+    BubbleEngine.init(canvas, { width: W, height: H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+    BubbleEngine.setCallbacks(update, render);
+
+    // ── Pulsanti ──
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      resetGame();
+      playing = true;
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      resetGame();
+      playing = true;
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>

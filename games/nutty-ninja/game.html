@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutty Ninja – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    /* ── Game Nav ── */
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    /* ── Layout ── */
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 220px auto 220px;
+      gap: 2rem; align-items: start;
+      padding: 2rem; max-width: 960px; margin: 0 auto; width: 100%;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; color: var(--on-bg); }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.5rem; }
+    .info-box, .leaderboard-box {
+      background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-bottom: 1rem;
+    }
+    .info-box h3, .leaderboard-box h3 {
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg);
+    }
+    .controls-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-list li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-list kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; padding: 0 .4rem; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    /* ── Canvas area ── */
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2.5rem 3rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .9rem; color: var(--on-surface-v); margin-top: -.3rem; }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; line-height: 1; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+    .hidden { display: none !important; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr; padding: 1rem; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <span class="score-label">Punteggio</span>
+      <span class="score-value" id="scoreDisplay">0</span>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Nutty Ninja</h2>
+      <p>Guida il ninja attraverso le strade trafficate e il fiume pericoloso fino ai ninfee! Evita le auto, salta sui tronchi e raggiungi tutti e 5 i bersagli per avanzare di livello.</p>
+      <div class="info-box">
+        <h3>Controlli</h3>
+        <ul class="controls-list">
+          <li><kbd>↑</kbd> Avanza</li>
+          <li><kbd>↓</kbd> Indietrega</li>
+          <li><kbd>←</kbd> Sinistra</li>
+          <li><kbd>→</kbd> Destra</li>
+        </ul>
+      </div>
+      <div class="info-box">
+        <h3>Come si gioca</h3>
+        <ul class="controls-list">
+          <li>Evita le auto in strada</li>
+          <li>Nuota sui tronchi nel fiume</li>
+          <li>Atterra sulle ninfee</li>
+          <li>Riempi tutte e 5 per salire di livello</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Overlay Inizio -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Nutty Ninja</div>
+            <div class="overlay-sub">Traversa la strada e il fiume!</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>Migliori Punteggi</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    // ── Polyfill roundRect ──────────────────────────────────────────
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.rect(x, y, w, h);
+        return this;
+      };
+    }
+
+    // ── Constants ───────────────────────────────────────────────────
+    const GAME_ID    = 'nutty-ninja';
+    const W          = 480;
+    const H          = 560;
+    const CELL       = 80;
+
+    // Row Y positions (top-left corner of each 80px row)
+    const ROW_Y = [0, 80, 160, 240, 320, 400, 480];
+    // Row types
+    const ROW_GOAL   = 0;
+    const ROW_RIVER1 = 1;
+    const ROW_RIVER2 = 2;
+    const ROW_ROAD3  = 3;
+    const ROW_ROAD4  = 4;
+    const ROW_ROAD5  = 5;
+    const ROW_SAFE   = 6;
+
+    const LILY_PAD_XS = [0, 96, 192, 288, 384];
+
+    // Lane configurations (speed in px/s, direction: +1 right, -1 left)
+    const LANE_CONFIGS = [
+      null,                                  // row 0: goals
+      { type: 'river', dir:  1, speed: 70  }, // row 1: river A
+      { type: 'river', dir: -1, speed: 90  }, // row 2: river B
+      { type: 'road',  dir:  1, speed: 100 }, // row 3: road C
+      { type: 'road',  dir: -1, speed: 160 }, // row 4: road B
+      { type: 'road',  dir:  1, speed: 120 }, // row 5: road A
+      null,                                  // row 6: safe
+    ];
+
+    // Car colors per road row
+    const CAR_COLORS = { 3: '#f97316', 4: '#3b82f6', 5: '#dc2626' };
+    const CAR_W = 70, CAR_H = 40;
+    const LOG_W = 110, LOG_H = 50;
+    const CAR_COUNT = 3, LOG_COUNT = 2;
+    const CAR_SPACING = 160, LOG_SPACING = 240;
+
+    const MAX_LIVES = 3;
+    const TIME_LIMIT = 30; // seconds per life
+
+    // ── DOM References ──────────────────────────────────────────────
+    const scoreEl      = document.getElementById('scoreDisplay');
+    const overlayIdle  = document.getElementById('overlayIdle');
+    const overlayGO    = document.getElementById('overlayGameover');
+    const finalScoreEl = document.getElementById('finalScore');
+    const hsBadge      = document.getElementById('newHighScoreBadge');
+    const canvas       = document.getElementById('gameCanvas');
+
+    // ── Engine init ─────────────────────────────────────────────────
+    BubbleEngine.init(canvas, { width: W, height: H });
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+    // ── Game State ──────────────────────────────────────────────────
+    const Game = {
+      state: 'idle',  // idle | playing | dead | gameover
+      score: 0,
+      lives: MAX_LIVES,
+      level: 1,
+      speedMult: 1.0,
+      timer: TIME_LIMIT,
+      deathTimer: 0,    // brief pause on death
+      lilyPads: [],     // { x, filled }
+      cars: [],         // { row, x, w, h, dir, speed, color }
+      logs: [],         // { row, x, w, h, dir, speed }
+      player: {
+        // target grid position
+        row: ROW_SAFE,
+        col: 2,  // grid col 0-5, step=80px
+        targetX: 200,
+        targetY: 480,
+        // display (lerped) position
+        dispX: 200,
+        dispY: 480,
+        // track highest row reached this life for scoring
+        maxRow: ROW_SAFE,
+        graceTimer: 0,  // grace period for river edge detection
+      },
+      waveAnim: 0,
+
+      reset() {
+        this.score = 0;
+        this.lives = MAX_LIVES;
+        this.level = 1;
+        this.speedMult = 1.0;
+        this.timer = TIME_LIMIT;
+        this.deathTimer = 0;
+        this._initLevel();
+        scoreEl.textContent = '0';
+      },
+
+      _initLevel() {
+        this.lilyPads = LILY_PAD_XS.map(x => ({ x, filled: false }));
+        this._buildVehicles();
+        this._respawnPlayer();
+      },
+
+      _buildVehicles() {
+        this.cars = [];
+        this.logs = [];
+        for (let row = 1; row <= 5; row++) {
+          const cfg = LANE_CONFIGS[row];
+          if (!cfg) continue;
+          const spd = cfg.speed * this.speedMult;
+          if (cfg.type === 'road') {
+            for (let i = 0; i < CAR_COUNT; i++) {
+              this.cars.push({
+                row,
+                x: i * CAR_SPACING,
+                w: CAR_W, h: CAR_H,
+                dir: cfg.dir,
+                speed: spd,
+                color: CAR_COLORS[row]
+              });
+            }
+          } else {
+            for (let i = 0; i < LOG_COUNT; i++) {
+              this.logs.push({
+                row,
+                x: i * LOG_SPACING,
+                w: LOG_W, h: LOG_H,
+                dir: cfg.dir,
+                speed: spd
+              });
+            }
+          }
+        }
+      },
+
+      _respawnPlayer() {
+        this.player.row      = ROW_SAFE;
+        this.player.col      = 2;
+        this.player.targetX  = 2 * CELL + (CELL - 40) / 2;  // center in col 2, account for ninja width 40
+        this.player.targetY  = ROW_Y[ROW_SAFE];
+        this.player.dispX    = this.player.targetX;
+        this.player.dispY    = this.player.targetY;
+        this.player.maxRow   = ROW_SAFE;
+        this.player.graceTimer = 0;
+        this.timer = TIME_LIMIT;
+        this.deathTimer = 0;
+      },
+
+      _die() {
+        if (this.state !== 'playing') return;
+        this.state = 'dead';
+        this.deathTimer = 0.5; // 0.5s pause
+        this.lives--;
+        BubbleEngine.audio.noise(0.3, 0.6);
+        if (this.lives <= 0) {
+          // Game over after pause
+        }
+      },
+
+      _afterDeath() {
+        if (this.lives <= 0) {
+          showGameOver(this.score);
+        } else {
+          this._respawnPlayer();
+          this.state = 'playing';
+        }
+      },
+
+      update(dt) {
+        if (this.state === 'dead') {
+          this.deathTimer -= dt;
+          if (this.deathTimer <= 0) this._afterDeath();
+          return;
+        }
+        if (this.state !== 'playing') return;
+
+        this.waveAnim += dt;
+
+        // Timer
+        this.timer -= dt;
+        if (this.timer <= 0) {
+          this.timer = 0;
+          this._die();
+          return;
+        }
+
+        // Input: move player
+        const inp = BubbleEngine.input;
+        const p = this.player;
+
+        if (inp.justPressed.has('ArrowUp')) {
+          if (p.row > 0) {
+            p.row--;
+            p.targetY = ROW_Y[p.row];
+            // Row advancement scoring (only for new highs)
+            if (p.row < p.maxRow) {
+              p.maxRow = p.row;
+              this.score += 10;
+              scoreEl.textContent = this.score.toLocaleString('it-IT');
+            }
+            BubbleEngine.audio.beep(440, 0.05, 'square', 0.4);
+          }
+        }
+        if (inp.justPressed.has('ArrowDown')) {
+          if (p.row < ROW_SAFE) {
+            p.row++;
+            p.targetY = ROW_Y[p.row];
+            BubbleEngine.audio.beep(330, 0.05, 'square', 0.3);
+          }
+        }
+        if (inp.justPressed.has('ArrowLeft')) {
+          if (p.col > 0) {
+            p.col--;
+            p.targetX = p.col * CELL + (CELL - 40) / 2;
+            BubbleEngine.audio.beep(440, 0.05, 'square', 0.3);
+          }
+        }
+        if (inp.justPressed.has('ArrowRight')) {
+          if (p.col < 5) {
+            p.col++;
+            p.targetX = p.col * CELL + (CELL - 40) / 2;
+            BubbleEngine.audio.beep(440, 0.05, 'square', 0.3);
+          }
+        }
+
+        // Update vehicles
+        for (const car of this.cars) {
+          car.x += car.dir * car.speed * dt;
+          car.x = ((car.x % W) + W) % W;
+        }
+        for (const log of this.logs) {
+          log.x += log.dir * log.speed * dt;
+          log.x = ((log.x % W) + W) % W;
+        }
+
+        // River: carry player on log
+        if (p.row === ROW_RIVER1 || p.row === ROW_RIVER2) {
+          const onLog = this._getLogUnder();
+          if (onLog) {
+            // Carry player with log
+            const cfg = LANE_CONFIGS[p.row];
+            const delta = onLog.dir * onLog.speed * dt;
+            p.targetX += delta;
+            p.dispX += delta;
+            // Update col tracking
+            p.col = Math.round((p.targetX - (CELL - 40) / 2) / CELL);
+
+            // Clamp — if log carries player off screen, die
+            if (p.targetX < -40 || p.targetX > W) {
+              this._die();
+              return;
+            }
+            p.graceTimer = 0;
+          } else {
+            // Not on log — grace period before death
+            p.graceTimer += dt;
+            if (p.graceTimer > 0.1) {
+              this._die();
+              return;
+            }
+          }
+        } else {
+          p.graceTimer = 0;
+        }
+
+        // Lerp display position
+        const lerpSpeed = 800;
+        const dxSign = p.targetX > p.dispX ? 1 : -1;
+        const dySign = p.targetY > p.dispY ? 1 : -1;
+        const dxAmt = Math.min(Math.abs(p.targetX - p.dispX), lerpSpeed * dt);
+        const dyAmt = Math.min(Math.abs(p.targetY - p.dispY), lerpSpeed * dt);
+        p.dispX += dxSign * dxAmt;
+        p.dispY += dySign * dyAmt;
+
+        // Goal row check
+        if (p.row === ROW_GOAL) {
+          this._checkGoal();
+          return;
+        }
+
+        // Car collision (only on road rows)
+        if (p.row >= ROW_ROAD3 && p.row <= ROW_ROAD5) {
+          this._checkCarCollision();
+        }
+      },
+
+      _getLogUnder() {
+        const p = this.player;
+        const px = p.targetX, py = p.targetY;
+        for (const log of this.logs) {
+          if (log.row !== p.row) continue;
+          const logY = ROW_Y[log.row] + (CELL - LOG_H) / 2;
+          // Check using multiple log positions (wrapping)
+          for (let offset of [-W, 0, W]) {
+            if (BubbleEngine.utils.AABB(px, py, 40, 40, log.x + offset, logY, log.w, log.h)) {
+              return log;
+            }
+          }
+        }
+        return null;
+      },
+
+      _checkCarCollision() {
+        const p = this.player;
+        const px = p.dispX, py = p.dispY;
+        for (const car of this.cars) {
+          if (car.row !== p.row) continue;
+          const carY = ROW_Y[car.row] + (CELL - CAR_H) / 2;
+          for (let offset of [-W, 0, W]) {
+            if (BubbleEngine.utils.AABB(px, py, 40, 40, car.x + offset, carY, car.w, car.h)) {
+              this._die();
+              return;
+            }
+          }
+        }
+      },
+
+      _checkGoal() {
+        const p = this.player;
+        const playerCenterX = p.targetX + 20; // 40px wide, center = +20
+        // Find closest lily pad
+        for (const pad of this.lilyPads) {
+          const padCenterX = pad.x + 40;
+          if (Math.abs(playerCenterX - padCenterX) <= 8) {
+            if (!pad.filled) {
+              pad.filled = true;
+              this.score += 100;
+              scoreEl.textContent = this.score.toLocaleString('it-IT');
+              BubbleEngine.audio.beep(880, 0.15, 'sine', 0.6);
+              BubbleEngine.audio.beep(1100, 0.1, 'sine', 0.5);
+              this.state = 'playing';
+              // Check level clear
+              if (this.lilyPads.every(lp => lp.filled)) {
+                this._levelClear();
+              } else {
+                this._respawnPlayer();
+              }
+              return;
+            } else {
+              // Pad already filled, die
+              this._die();
+              return;
+            }
+          }
+        }
+        // No matching pad — die
+        this._die();
+      },
+
+      _levelClear() {
+        this.level++;
+        this.speedMult *= 1.1;
+        this.score += 500;
+        scoreEl.textContent = this.score.toLocaleString('it-IT');
+        BubbleEngine.audio.playMelody([
+          { freq: 523, dur: 0.1 }, { freq: 659, dur: 0.1 },
+          { freq: 784, dur: 0.1 }, { freq: 1047, dur: 0.2 }
+        ]);
+        this._initLevel();
+        this.state = 'playing';
+      },
+
+      render(ctx) {
+        // ── Background ──────────────────────────────────
+        this._drawBackground(ctx);
+
+        // ── Vehicles ────────────────────────────────────
+        this._drawLogs(ctx);
+        this._drawCars(ctx);
+
+        // ── Player ──────────────────────────────────────
+        if (this.state !== 'dead' || Math.floor(this.deathTimer * 10) % 2 === 0) {
+          drawNinja(ctx, this.player.dispX, this.player.dispY);
+        }
+
+        // ── HUD ─────────────────────────────────────────
+        this._drawHUD(ctx);
+      },
+
+      _drawBackground(ctx) {
+        // Row 6: safe/grass
+        ctx.fillStyle = '#166534';
+        ctx.fillRect(0, ROW_Y[6], W, CELL);
+
+        // Rows 3-5: road (asphalt)
+        ctx.fillStyle = '#374151';
+        for (let row = 3; row <= 5; row++) {
+          ctx.fillRect(0, ROW_Y[row], W, CELL);
+        }
+        // Dashed center lines between road rows
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([20, 15]);
+        for (let row = 3; row <= 4; row++) {
+          const lineY = ROW_Y[row] + CELL; // bottom edge of this row = top of next
+          ctx.beginPath();
+          ctx.moveTo(0, lineY);
+          ctx.lineTo(W, lineY);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Rows 1-2: river water
+        const t = this.waveAnim;
+        ctx.fillStyle = '#0f4c5c';
+        for (let row = 1; row <= 2; row++) {
+          ctx.fillRect(0, ROW_Y[row], W, CELL);
+          // Animated wave lines
+          ctx.strokeStyle = 'rgba(100,200,220,0.25)';
+          ctx.lineWidth = 2;
+          for (let waveY = ROW_Y[row] + 15; waveY < ROW_Y[row] + CELL; waveY += 20) {
+            ctx.beginPath();
+            for (let wx = 0; wx <= W; wx += 4) {
+              const wy = waveY + Math.sin((wx / 40) + t * 2 + row) * 4;
+              wx === 0 ? ctx.moveTo(wx, wy) : ctx.lineTo(wx, wy);
+            }
+            ctx.stroke();
+          }
+        }
+
+        // Row 0: goal row — dark water + lily pads
+        ctx.fillStyle = '#0a3340';
+        ctx.fillRect(0, ROW_Y[0], W, CELL);
+        this._drawLilyPads(ctx);
+      },
+
+      _drawLilyPads(ctx) {
+        for (const pad of this.lilyPads) {
+          const cx = pad.x + 40;
+          const cy = ROW_Y[0] + 40;
+          // Outer ring (water ripple)
+          ctx.beginPath();
+          ctx.arc(cx, cy, 34, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(100,200,100,0.3)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Pad circle
+          ctx.beginPath();
+          ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+          ctx.fillStyle = pad.filled ? '#15803d' : '#16a34a';
+          ctx.fill();
+          // Inner detail
+          ctx.beginPath();
+          ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+          ctx.fillStyle = pad.filled ? '#166534' : '#15803d';
+          ctx.fill();
+          // Notch (classic lily pad cut)
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx - 8, cy - 30);
+          ctx.lineTo(cx + 8, cy - 30);
+          ctx.closePath();
+          ctx.fillStyle = '#0a3340';
+          ctx.fill();
+
+          if (pad.filled) {
+            ctx.fillStyle = '#bbf7d0';
+            ctx.font = 'bold 22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✓', cx, cy);
+          }
+        }
+      },
+
+      _drawCars(ctx) {
+        for (const car of this.cars) {
+          const y = ROW_Y[car.row] + (CELL - CAR_H) / 2;
+          // Draw at main position and wrapped positions
+          for (let offset of [-W, 0, W]) {
+            const x = car.x + offset;
+            if (x + car.w < -10 || x > W + 10) continue;
+            // Body
+            ctx.fillStyle = car.color;
+            ctx.beginPath();
+            ctx.roundRect(x, y, car.w, car.h, 6);
+            ctx.fill();
+            // Windshield
+            ctx.fillStyle = 'rgba(200,235,255,0.7)';
+            if (car.dir > 0) {
+              ctx.fillRect(x + car.w - 20, y + 6, 15, car.h - 12);
+            } else {
+              ctx.fillRect(x + 5, y + 6, 15, car.h - 12);
+            }
+            // Headlights
+            ctx.fillStyle = '#fef9c3';
+            if (car.dir > 0) {
+              ctx.fillRect(x + car.w - 5, y + 8, 4, 6);
+              ctx.fillRect(x + car.w - 5, y + car.h - 14, 4, 6);
+            } else {
+              ctx.fillRect(x + 1, y + 8, 4, 6);
+              ctx.fillRect(x + 1, y + car.h - 14, 4, 6);
+            }
+            // Wheels
+            ctx.fillStyle = '#1f2937';
+            ctx.beginPath(); ctx.arc(x + 12, y + car.h + 1, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + car.w - 12, y + car.h + 1, 6, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      },
+
+      _drawLogs(ctx) {
+        for (const log of this.logs) {
+          const y = ROW_Y[log.row] + (CELL - LOG_H) / 2;
+          for (let offset of [-W, 0, W]) {
+            const x = log.x + offset;
+            if (x + log.w < -10 || x > W + 10) continue;
+            // Main body
+            ctx.fillStyle = '#92400e';
+            ctx.beginPath();
+            ctx.roundRect(x, y, log.w, log.h, 10);
+            ctx.fill();
+            // Wood grain lines
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 1.5;
+            for (let gx = x + 20; gx < x + log.w - 10; gx += 20) {
+              ctx.beginPath();
+              ctx.moveTo(gx, y + 4);
+              ctx.bezierCurveTo(gx + 4, y + LOG_H / 2, gx - 4, y + LOG_H / 2, gx, y + LOG_H - 4);
+              ctx.stroke();
+            }
+            // End caps
+            ctx.fillStyle = '#a16207';
+            ctx.beginPath();
+            ctx.ellipse(x + 10, y + LOG_H / 2, 8, LOG_H / 2 - 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + log.w - 10, y + LOG_H / 2, 8, LOG_H / 2 - 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      },
+
+      _drawHUD(ctx) {
+        // HUD bar background at top of canvas
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(0, 0, W, 28);
+
+        // Lives (hearts) — top left
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        let heartStr = '';
+        for (let i = 0; i < MAX_LIVES; i++) {
+          heartStr += i < this.lives ? '♥ ' : '♡ ';
+        }
+        ctx.fillStyle = this.lives <= 1 ? '#f87171' : '#fca5a5';
+        ctx.fillText(heartStr.trim(), 8, 14);
+
+        // Score — top center
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fef9c3';
+        ctx.fillText(this.score.toLocaleString('it-IT'), W / 2, 14);
+
+        // Timer — top right
+        const t = Math.ceil(this.timer);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = t <= 10 ? '#f87171' : '#d1fae5';
+        if (t <= 10 && Math.floor(this.waveAnim * 2) % 2 === 0) {
+          ctx.fillStyle = '#fca5a5'; // pulse red
+        }
+        ctx.fillText(t + 's', W - 8, 14);
+
+        // Level indicator
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('LV ' + this.level, W / 2, 25);
+      }
+    };
+
+    // ── Ninja pixel art draw function ───────────────────────────────
+    function drawNinja(ctx, x, y) {
+      // Body
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(x + 16, y + 20, 18, 22);
+      // Legs
+      ctx.fillStyle = '#166534';
+      ctx.fillRect(x + 16, y + 38, 7, 10);
+      ctx.fillRect(x + 27, y + 38, 7, 10);
+      // Head
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(x + 18, y + 8, 14, 14);
+      // Headband
+      ctx.fillStyle = '#b60051';
+      ctx.fillRect(x + 16, y + 12, 18, 5);
+      // Headband tails
+      ctx.fillRect(x + 30, y + 12, 6, 3);
+      // Eyes
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(x + 20, y + 14, 3, 3);
+      ctx.fillRect(x + 27, y + 14, 3, 3);
+      // Arms
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(x + 8, y + 22, 8, 5);
+      ctx.fillRect(x + 34, y + 22, 8, 5);
+      // Sword (right hand)
+      ctx.fillStyle = '#e5e7eb';
+      ctx.fillRect(x + 42, y + 14, 3, 14);
+      ctx.fillStyle = '#9ca3af';
+      ctx.fillRect(x + 38, y + 22, 8, 3);
+    }
+
+    // ── Show Game Over ───────────────────────────────────────────────
+    function showGameOver(score) {
+      BubbleEngine.loop.stop();
+      const isHS = BubbleScores.isHighScore(GAME_ID, score);
+      BubbleScores.save(GAME_ID, score);
+      BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+      finalScoreEl.textContent = score.toLocaleString('it-IT');
+      hsBadge.classList.toggle('hidden', !isHS);
+      overlayGO.classList.remove('hidden');
+    }
+
+    // ── Button handlers ──────────────────────────────────────────────
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGO.classList.add('hidden');
+      Game.reset();
+      Game.state = 'playing';
+      BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>

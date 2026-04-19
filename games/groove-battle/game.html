@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Groove Battle – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); display: block; }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .game-center {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem;
+    }
+    .canvas-wrap {
+      position: relative; border-radius: 1.5rem; overflow: hidden;
+      box-shadow: var(--shadow-ambi);
+    }
+    #gameCanvas { display: block; }
+    .overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem;
+      padding: 2.5rem 3rem; text-align: center;
+      box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1rem; min-width: 240px;
+    }
+    .overlay-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub { font-size: .9rem; color: var(--on-surface-v); }
+    .overlay-score-big { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; padding: .3rem .8rem; border-radius: 999px;
+    }
+    .controls-hint {
+      font-size: .82rem; color: var(--on-surface-v);
+      background: var(--surface-lo); padding: .8rem 1.2rem;
+      border-radius: .8rem; text-align: left; line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <div class="score-label">Punteggio</div>
+      <div class="score-value" id="scoreDisplay">0</div>
+    </div>
+  </nav>
+
+  <div class="game-center">
+    <div style="display:flex;gap:1.5rem;align-items:flex-start">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Idle overlay -->
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">Groove Battle</div>
+            <div class="overlay-sub">Ripeti la sequenza per sconfiggere il nemico!</div>
+            <div class="controls-hint">
+              <strong>Controlli:</strong><br>
+              <kbd>A</kbd> ♦ Fuoco &nbsp; <kbd>S</kbd> ♣ Acqua<br>
+              <kbd>D</kbd> ♥ Terra &nbsp; <kbd>F</kbd> ♠ Vento
+            </div>
+            <button class="btn-primary" id="btnStart">Inizia Battaglia</button>
+          </div>
+        </div>
+
+        <!-- Game over overlay -->
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Fine Battaglia</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Rigioca</button>
+            <a href="../../index.html" class="btn-ghost-arrow">← Portale</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar leaderboard -->
+      <div style="width:180px">
+        <div style="background:var(--surface-lo);border-radius:1.2rem;padding:1rem 1.2rem;margin-bottom:1rem">
+          <h3 style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">🏆 Migliori</h3>
+          <ol id="leaderboardList" style="list-style:none;display:flex;flex-direction:column;gap:.4rem"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+    // ── Polyfill ──
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.rect(x, y, w, h); return this;
+      };
+    }
+
+    // ── Constants ──
+    const GAME_ID = 'groove-battle';
+    const W = 480, H = 480;
+
+    const SYMBOLS = [
+      { key: 'KeyA', color: '#b60051', label: '♦', name: 'Fuoco', freq: 330 },
+      { key: 'KeyS', color: '#26e6ff', label: '♣', name: 'Acqua', freq: 440 },
+      { key: 'KeyD', color: '#fdd400', label: '♥', name: 'Terra', freq: 550 },
+      { key: 'KeyF', color: '#4ade80', label: '♠', name: 'Vento', freq: 660 },
+    ];
+
+    // ── DOM refs ──
+    const scoreEl        = document.getElementById('scoreDisplay');
+    const overlayIdle    = document.getElementById('overlayIdle');
+    const overlayGameover= document.getElementById('overlayGameover');
+    const finalScoreEl   = document.getElementById('finalScore');
+    const badgeEl        = document.getElementById('newHighScoreBadge');
+    const leaderboardEl  = document.getElementById('leaderboardList');
+
+    // ── State ──
+    let sequence = [], playerInput = [], round = 1;
+    let heroHP = 100, enemyHP = 100;
+    let phase = 'show'; // 'show' | 'input'
+    let showIndex = 0, showTimer = 0, showVisible = true;
+    let score = 0;
+    let flashMsg = '', flashTimer = 0;
+    let pendingGameOver = false;
+    let pendingGameOverScore = 0;
+
+    // ── Engine init ──
+    BubbleEngine.init(document.getElementById('gameCanvas'), { width: W, height: H });
+    BubbleScores.renderList(GAME_ID, leaderboardEl);
+
+    // ── Game logic ──
+    function _buildSequence() {
+      sequence.push(BubbleEngine.utils.randInt(0, 3));
+      showIndex = 0;
+      showTimer = 0;
+      showVisible = true;
+      playerInput = [];
+      phase = 'show';
+    }
+
+    function _resetGame() {
+      sequence = [];
+      playerInput = [];
+      round = 1;
+      heroHP = 100;
+      enemyHP = 100;
+      phase = 'show';
+      showIndex = 0;
+      showTimer = 0;
+      showVisible = true;
+      score = 0;
+      flashMsg = '';
+      flashTimer = 0;
+      pendingGameOver = false;
+      pendingGameOverScore = 0;
+      scoreEl.textContent = '0';
+      _buildSequence();
+    }
+
+    function showGameOver(finalScore) {
+      BubbleEngine.loop.stop();
+      BubbleScores.save(GAME_ID, finalScore);
+      BubbleScores.renderList(GAME_ID, leaderboardEl);
+      finalScoreEl.textContent = finalScore.toLocaleString('it-IT');
+      if (BubbleScores.getBest(GAME_ID) === finalScore) {
+        badgeEl.classList.remove('hidden');
+      } else {
+        badgeEl.classList.add('hidden');
+      }
+      overlayGameover.classList.remove('hidden');
+    }
+
+    function update(dt) {
+      // Handle pending game over (deferred from within update)
+      if (pendingGameOver) {
+        if (flashTimer <= 0) {
+          pendingGameOver = false;
+          showGameOver(pendingGameOverScore);
+        } else {
+          flashTimer -= dt;
+        }
+        return;
+      }
+
+      if (flashTimer > 0) {
+        flashTimer -= dt;
+        return;
+      }
+
+      if (phase === 'show') {
+        showTimer += dt;
+        if (showTimer >= 0.6) showVisible = false; // gap: symbol hidden for last 300ms
+        if (showTimer >= 0.9) {
+          showTimer = 0;
+          showVisible = true;
+          showIndex++;
+          if (showIndex >= sequence.length) {
+            phase = 'input';
+            showIndex = -1;
+          }
+        }
+      } else if (phase === 'input') {
+        const jp = BubbleEngine.input.justPressed;
+        SYMBOLS.forEach((sym, si) => {
+          if (jp.has(sym.key)) {
+            const expected = sequence[playerInput.length];
+            playerInput.push(si);
+
+            if (si === expected) {
+              BubbleEngine.audio.beep(sym.freq, 0.15, 'sine', 0.6);
+
+              if (playerInput.length === sequence.length) {
+                // Round complete!
+                const dmg = 15 + round * 2;
+                enemyHP = Math.max(0, enemyHP - dmg);
+                score += 100 * round;
+                scoreEl.textContent = score.toLocaleString('it-IT');
+
+                if (enemyHP <= 0) {
+                  flashMsg = 'Vittoria!';
+                  flashTimer = 1.5;
+                  pendingGameOver = true;
+                  pendingGameOverScore = score;
+                } else {
+                  flashMsg = `Attacco! -${dmg} ♥`;
+                  flashTimer = 1.0;
+                  round++;
+                  _buildSequence();
+                }
+              }
+            } else {
+              // Wrong input
+              BubbleEngine.audio.beep(80, 0.3, 'sawtooth', 0.5);
+              heroHP = Math.max(0, heroHP - 20);
+              flashMsg = 'Errore! -20 ♥';
+              flashTimer = 0.8;
+
+              if (heroHP <= 0) {
+                flashMsg = 'Sconfitta...';
+                flashTimer = 1.5;
+                pendingGameOver = true;
+                pendingGameOverScore = score;
+              } else {
+                _buildSequence(); // restart sequence for next attempt
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function drawEnemy(ctx, cx, cy, rnd) {
+      const pulse = 0.9 + 0.1 * Math.sin(Date.now() / 300);
+      const r = 35 * pulse;
+      const rage = Math.min(1, rnd / 10);
+      ctx.fillStyle = `hsl(${340 - rage * 40}, 80%, 45%)`;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      // Eyes
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx - 12, cy - 8, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 12, cy - 8, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a0a2e';
+      ctx.beginPath(); ctx.arc(cx - 12 + rage * 3, cy - 6, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 12 - rage * 3, cy - 6, 5, 0, Math.PI * 2); ctx.fill();
+      // Angry eyebrows
+      ctx.strokeStyle = '#1a0a2e'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - 22, cy - 18 - rage * 5);
+      ctx.lineTo(cx - 2, cy - 16);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + 22, cy - 18 - rage * 5);
+      ctx.lineTo(cx + 2, cy - 16);
+      ctx.stroke();
+      // Mouth (frown gets worse)
+      ctx.beginPath();
+      ctx.arc(cx, cy + 12, 12, 0.2 + rage * 0.3, Math.PI - 0.2 - rage * 0.3, true);
+      ctx.stroke();
+    }
+
+    function render(ctx) {
+      // Background gradient
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#1a0a2e');
+      bg.addColorStop(1, '#2d0b7a');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // ── HP Bars ──
+      const barW = 160, barH = 18;
+
+      // Hero bar
+      ctx.fillStyle = '#333';
+      ctx.fillRect(10, 12, barW, barH);
+      ctx.fillStyle = heroHP > 50 ? '#4ade80' : heroHP > 25 ? '#fdd400' : '#dc2626';
+      ctx.fillRect(10, 12, barW * heroHP / 100, barH);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Eroe ${heroHP}/100`, 10, 45);
+
+      // Enemy bar
+      ctx.fillStyle = '#333';
+      ctx.fillRect(W - 10 - barW, 12, barW, barH);
+      ctx.fillStyle = '#b60051';
+      ctx.fillRect(W - 10 - barW, 12, barW * enemyHP / 100, barH);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Nemico ${enemyHP}/100`, W - 10, 45);
+
+      // VS label
+      ctx.fillStyle = '#fdd400';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('VS', W / 2, 30);
+
+      // ── Enemy character ──
+      drawEnemy(ctx, W / 2, 150, round);
+
+      // ── Sequence display ──
+      const seqY = 250;
+      const boxSize = 36, gap = 8;
+      const totalW = sequence.length * (boxSize + gap) - gap;
+      const startX = W / 2 - totalW / 2;
+      sequence.forEach((si, i) => {
+        const sym = SYMBOLS[si];
+        const isActive = phase === 'show' && i === showIndex && showVisible;
+        ctx.fillStyle = isActive ? sym.color : sym.color + '44';
+        ctx.fillRect(startX + i * (boxSize + gap), seqY - boxSize / 2, boxSize, boxSize);
+        if (isActive) {
+          ctx.fillStyle = '#fff';
+          ctx.font = `bold ${boxSize * 0.5}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(sym.label, startX + i * (boxSize + gap) + boxSize / 2, seqY + boxSize * 0.2);
+        }
+      });
+
+      // ── Phase indicator ──
+      ctx.fillStyle = phase === 'show' ? '#fdd400' : '#4ade80';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        phase === 'show'
+          ? 'Guarda la sequenza...'
+          : `Replica! (${playerInput.length}/${sequence.length})`,
+        W / 2, 295
+      );
+
+      // ── Symbol buttons ──
+      const btnY = 400, btnSize = 70, btnGap = 12;
+      const btnStart = W / 2 - (4 * btnSize + 3 * btnGap) / 2;
+      SYMBOLS.forEach((sym, si) => {
+        const bx = btnStart + si * (btnSize + btnGap);
+        const isNext = phase === 'input' &&
+          playerInput.length < sequence.length &&
+          si === sequence[playerInput.length];
+        ctx.fillStyle = isNext ? sym.color : sym.color + '66';
+        ctx.fillRect(bx, btnY - btnSize / 2, btnSize, btnSize);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(sym.label, bx + btnSize / 2, btnY + 8);
+        ctx.font = '11px sans-serif';
+        ctx.fillText(sym.key.replace('Key', ''), bx + btnSize / 2, btnY + btnSize / 2 - 4);
+      });
+
+      // ── Flash message ──
+      if (flashTimer > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, H / 2 - 40, W, 80);
+        ctx.fillStyle = flashMsg.includes('Vittoria') ? '#fdd400'
+          : flashMsg.includes('Errore') || flashMsg.includes('Sconfitta') ? '#dc2626'
+          : '#4ade80';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(flashMsg, W / 2, H / 2 + 10);
+      }
+
+      // ── Round indicator ──
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`Round ${round}`, W - 8, H - 8);
+    }
+
+    BubbleEngine.setCallbacks(update, render);
+
+    // ── Button handlers ──
+    document.getElementById('btnStart').addEventListener('click', () => {
+      overlayIdle.classList.add('hidden');
+      _resetGame();
+      BubbleEngine.loop.start();
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      overlayGameover.classList.add('hidden');
+      badgeEl.classList.add('hidden');
+      _resetGame();
+      BubbleEngine.loop.start();
+    });
+  </script>
+</body>
+</html>
