@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termini di Gioco – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <style>
+    html { scroll-behavior: smooth; }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: rgba(252,244,255,0.88); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(186,164,211,0.25);
+    }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--on-surface-v); font-weight: 500; font-size: 0.92rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--primary); }
+
+    .page-hero {
+      background: linear-gradient(160deg, var(--surface-lo) 0%, var(--bg) 100%);
+      padding: 4rem 3rem 3rem;
+      border-bottom: 1px solid rgba(186,164,211,0.15);
+    }
+    .page-hero .label { font-size: 0.72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); margin-bottom: .75rem; }
+    .page-hero h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.025em; color: var(--on-bg); margin-bottom: .5rem; }
+    .page-hero .meta { font-size: .85rem; color: var(--on-surface-v); }
+
+    .content { max-width: 760px; margin: 0 auto; padding: 4rem 3rem 6rem; }
+    .content h2 { font-size: 1.25rem; font-weight: 800; color: var(--on-bg); margin: 2.5rem 0 .75rem; letter-spacing: -.015em; }
+    .content h2:first-child { margin-top: 0; }
+    .content p { font-size: .95rem; line-height: 1.75; color: var(--on-surface-v); margin-bottom: 1rem; }
+    .content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .content ul li { font-size: .95rem; line-height: 1.75; color: var(--on-surface-v); margin-bottom: .3rem; }
+    .content strong { color: var(--on-bg); font-weight: 700; }
+    .content a { color: var(--primary); text-decoration: none; }
+    .content a:hover { text-decoration: underline; }
+    .info-box { background: var(--surface-lo); border-left: 4px solid var(--secondary-c); border-radius: 0 1rem 1rem 0; padding: 1rem 1.25rem; margin: 1.5rem 0; font-size: .9rem; color: var(--on-surface-v); line-height: 1.6; }
+
+    footer { background: var(--surface-c); padding: 3.5rem 3rem 2rem; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; margin-bottom: 2.5rem; }
+    .footer-brand p { color: var(--on-surface-v); font-size: .88rem; margin-top: .9rem; max-width: 280px; line-height: 1.65; }
+    .footer-col h4 { font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--on-bg); margin-bottom: 1.1rem; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: .65rem; }
+    .footer-col a { text-decoration: none; color: var(--on-surface-v); font-size: .88rem; transition: color .18s; }
+    .footer-col a:hover { color: var(--primary); }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid rgba(186,164,211,.35); font-size: .8rem; color: var(--on-surface-v); }
+
+    @media (max-width: 768px) {
+      nav { padding: .875rem 1.5rem; }
+      .nav-links,
+      .page-hero { padding: 2.5rem 1.5rem 2rem; }
+      .content { padding: 2.5rem 1.5rem 4rem; }
+      .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+      footer { padding: 2.5rem 1.5rem 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      nav { padding: .75rem 1rem; }
+      .page-hero { padding: 2rem 1rem 1.5rem; }
+      .content { padding: 2rem 1rem 3rem; }
+      footer { padding: 2rem 1rem 1.5rem; }
+      .footer-bottom { flex-direction: column; gap: .5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <script src="shared/nav.js" data-base=""></script>
+
+  <div class="page-hero">
+    <div class="label">Legale</div>
+    <h1>Termini di Gioco</h1>
+    <p class="meta">Ultimo aggiornamento: 19 aprile 2026</p>
+  </div>
+
+  <div class="content">
+    <div class="info-box">
+      Usando Bubble Arcade accetti questi Termini di Gioco. Sono scritti in modo semplice e leggibile perché crediamo nella trasparenza. Se hai dubbi, scrivici a <a href="mailto:[email]">[email]</a>.
+    </div>
+
+    <h2>1. Il servizio</h2>
+    <p>Bubble Arcade è un portale di giochi HTML5 <strong>completamente gratuito</strong>. Non è richiesta registrazione per giocare. I giochi funzionano direttamente nel browser senza installazioni.</p>
+
+    <h2>2. Utilizzo consentito</h2>
+    <p>Puoi usare Bubble Arcade per:</p>
+    <ul>
+      <li>Giocare liberamente a tutti i titoli disponibili</li>
+      <li>Condividere i link alle pagine di gioco con amici</li>
+      <li>Usare il portale su qualsiasi dispositivo personale</li>
+    </ul>
+    <p>Non è consentito:</p>
+    <ul>
+      <li>Tentare di violare, sovraccaricare o compromettere la sicurezza del sito</li>
+      <li>Usare strumenti automatici (bot, scraper) per navigare o interagire con il portale</li>
+      <li>Copiare i giochi o il codice sorgente senza autorizzazione scritta</li>
+      <li>Spacciare il portale o i suoi contenuti per propri senza crediti appropriati</li>
+    </ul>
+
+    <h2>3. Punteggi e classifiche</h2>
+    <p>I punteggi sono salvati localmente nel browser dell'utente tramite <code>localStorage</code>. Non sono verificati né garantiti come ufficiali. Bubble Arcade si riserva il diritto di azzerare o modificare i sistemi di punteggio in qualsiasi momento.</p>
+
+    <h2>4. Proprietà intellettuale</h2>
+    <p>Tutti i giochi, il design del portale, i loghi e i contenuti originali sono di proprietà di Bubble Arcade. I caratteri tipografici sono distribuiti da Google Fonts sotto licenza OFL. I giochi si ispirano a classici arcade storici: le meccaniche di gioco non sono soggette a copyright.</p>
+
+    <h2>5. Disponibilità del servizio</h2>
+    <p>Bubble Arcade è fornito <strong>"così com'è"</strong>, senza garanzie di continuità o assenza di errori. Ci impegniamo a mantenere il servizio disponibile, ma ci riserviamo il diritto di interrompere, modificare o aggiornare qualsiasi gioco o funzionalità senza preavviso.</p>
+
+    <h2>6. Limitazione di responsabilità</h2>
+    <p>Bubble Arcade non è responsabile per eventuali danni derivanti dall'uso del portale, inclusa la perdita di dati o punteggi. L'uso del sito è a rischio dell'utente.</p>
+
+    <h2>7. Modifiche ai termini</h2>
+    <p>Possiamo aggiornare questi Termini in qualsiasi momento. Le modifiche saranno pubblicate su questa pagina con la data di revisione aggiornata. Continuando a usare il sito dopo la pubblicazione delle modifiche, accetti i nuovi termini.</p>
+
+    <h2>8. Contatti</h2>
+    <p>Per domande sui Termini di Gioco, scrivi a <a href="mailto:[email]">[email]</a>.</p>
+  </div>
+
+  <script src="shared/footer.js" data-base=""></script>
+</body>
+</html>

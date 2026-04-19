@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c8005a"/>
+      <stop offset="100%" stop-color="#7a0038"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon -->
+  <rect x="0" y="4" width="32" height="32" rx="9" fill="url(#iconBg)"/>
+  <!-- Joystick base -->
+  <rect x="7" y="26" width="18" height="5" rx="2.5" fill="white" opacity="0.92"/>
+  <!-- Stick -->
+  <rect x="14" y="16" width="4" height="11" rx="2" fill="white" opacity="0.92"/>
+  <!-- Ball -->
+  <circle cx="16" cy="14" r="4.5" fill="#26e6ff"/>
+  <circle cx="14.5" cy="12.5" r="1.5" fill="white" opacity="0.45"/>
+
+  <!-- Wordmark -->
+  <text x="42" y="17" font-family="'Plus Jakarta Sans', system-ui, sans-serif"
+        font-size="13" font-weight="800" fill="#37274d" letter-spacing="-0.3">Bubble</text>
+  <text x="42" y="33" font-family="'Plus Jakarta Sans', system-ui, sans-serif"
+        font-size="13" font-weight="600" fill="#b60051" letter-spacing="1.2">ARCADE</text>
+</svg>

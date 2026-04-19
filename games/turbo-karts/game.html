@@ -6,6 +6,7 @@
   <title>Turbo Karts – Bubble Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
   <link rel="stylesheet" href="../../css/design-system.css">
   <style>
     html, body { height: 100%; }
@@ -289,7 +290,7 @@
         if (z < 0.02) continue; // troppo vicino/lontano
 
         const scale = 1 - z;
-        const yPos = H - (H - HORIZON_Y) * scale;
+        const yPos = H - (H - HORIZON_Y) * z;
 
         // offset rispetto al bordo strada
         const roadHalfW = (ROAD_BASE_W * (1 - z * 0.85)) / 2;
@@ -329,8 +330,8 @@
       const scale = 1 - z;
       if (scale <= 0) return;
 
-      const scX = W / 2 + (LANE_XS[obs.lane] - W / 2) * scale;
-      const scY = H - (H - HORIZON_Y) * scale;
+      const scX = W / 2 + (LANE_XS[obs.lane] - W / 2) * (1 - z * 0.85);
+      const scY = H - (H - HORIZON_Y) * z;
       const carW = 54 * scale;
       const carH = 36 * scale;
 

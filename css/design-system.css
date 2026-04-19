@@ -45,13 +45,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--on-bg); ove
 .btn-ghost-arrow .arrow { transition: transform .22s cubic-bezier(0.34,1.56,0.64,1); }
 .btn-ghost-arrow:hover .arrow { transform: translateX(5px); }
 
-.btn-nav-ghost {
-  background: none; border: none; cursor: pointer; font-family: var(--font);
-  font-weight: 600; font-size: .9rem; color: var(--on-surface-v);
-  transition: color .2s;
-}
-.btn-nav-ghost:hover { color: var(--primary); }
-
 /* Logo */
 .logo {
   font-size: 1.45rem; font-weight: 800; letter-spacing: -0.03em;
@@ -98,5 +91,51 @@ body { font-family: var(--font); background: var(--bg); color: var(--on-bg); ove
 .d-1{animation-delay:.05s} .d-2{animation-delay:.15s} .d-3{animation-delay:.25s}
 .d-4{animation-delay:.35s} .d-5{animation-delay:.45s} .d-6{animation-delay:.55s}
 
+/* ── Shared Nav ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 3rem;
+  background: rgba(252,244,255,0.88); backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(186,164,211,0.25);
+}
+.nav-links { display: flex; gap: 2.5rem; list-style: none; }
+.nav-links a { text-decoration: none; color: var(--on-surface-v); font-weight: 500; font-size: 0.92rem; transition: color .2s; }
+.nav-links a:hover { color: var(--primary); }
+
+/* ── Shared Footer ── */
+footer { background: var(--surface-c); padding: 3.5rem 3rem 2rem; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; margin-bottom: 2.5rem; }
+.footer-brand p { color: var(--on-surface-v); font-size: .88rem; margin-top: .9rem; max-width: 280px; line-height: 1.65; }
+.footer-col h4 { font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--on-bg); margin-bottom: 1.1rem; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: .65rem; }
+.footer-col a { text-decoration: none; color: var(--on-surface-v); font-size: .88rem; transition: color .18s; }
+.footer-col a:hover { color: var(--primary); }
+.footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid rgba(186,164,211,.35); font-size: .8rem; color: var(--on-surface-v); }
+
+@media (max-width: 768px) {
+  nav { padding: .875rem 1.5rem; }
+  .nav-links { display: none; }
+  footer { padding: 2.5rem 1.5rem 1.5rem; }
+  .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+}
+@media (max-width: 480px) {
+  nav { padding: .75rem 1rem; }
+  footer { padding: 2rem 1rem 1.5rem; }
+  .footer-bottom { flex-direction: column; gap: .5rem; text-align: center; }
+}
+
 /* Game page layout helpers */
 .hidden { display: none !important; }
+
+/* ── Game pages: responsive ── */
+@media (max-width: 700px) {
+  .game-layout {
+    grid-template-columns: 1fr !important;
+    padding: 1rem !important;
+  }
+  .sidebar { display: none !important; }
+  .game-center { padding: 0 !important; justify-content: center; }
+}
+

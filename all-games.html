@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutti i Giochi – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: rgba(252,244,255,0.88);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(186,164,211,0.25);
+    }
+    .nav-links { display: flex; align-items: center; gap: 2.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--on-surface-v); font-weight: 500; font-size: 0.92rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--primary); }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 3.5rem 3rem 2.5rem;
+      background: linear-gradient(160deg, var(--surface-lo) 0%, var(--bg) 100%);
+      border-bottom: 1px solid rgba(186,164,211,0.15);
+    }
+    .page-header h1 {
+      font-size: clamp(2rem, 4vw, 3rem); font-weight: 800;
+      letter-spacing: -0.025em; color: var(--on-bg); margin-bottom: 0.5rem;
+    }
+    .page-header p { color: var(--on-surface-v); font-size: 1rem; }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      padding: 1.5rem 3rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+      border-bottom: 1px solid rgba(186,164,211,0.15);
+      position: sticky; top: 65px; z-index: 50;
+      background: rgba(252,244,255,0.92); backdrop-filter: blur(10px);
+    }
+    .chips-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .result-count { font-size: 0.85rem; color: var(--on-surface-v); font-weight: 500; white-space: nowrap; }
+
+    /* ── CATALOG ── */
+    .catalog { padding: 2.5rem 3rem 4rem; }
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.4rem;
+      margin-bottom: 3rem;
+    }
+
+    .game-card {
+      background: var(--surface-0); border-radius: 2rem;
+      overflow: visible; position: relative; cursor: pointer;
+      box-shadow: 0 4px 18px -6px rgba(182,0,81,0.09);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+    }
+    .game-card:nth-child(odd):hover  { transform: scale(1.04) rotate(-1.5deg); box-shadow: var(--shadow-ambi); }
+    .game-card:nth-child(even):hover { transform: scale(1.04) rotate(1.5deg);  box-shadow: var(--shadow-ambi); }
+
+    .game-thumb {
+      width: 100%; aspect-ratio: 16/10; border-radius: 2rem 2rem 0 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; position: relative; overflow: hidden;
+    }
+    .game-thumb::after {
+      content: '▶ Play'; position: absolute; inset: 0;
+      background: rgba(182,0,81,0.75);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 800; color: white;
+      letter-spacing: 0.04em; font-family: var(--font);
+      opacity: 0; transition: opacity 0.22s;
+    }
+    .game-card:hover .game-thumb::after { opacity: 1; }
+
+    .game-body { padding: 0.85rem 1rem 0.7rem; }
+    .game-meta { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.28rem; }
+    .game-genre {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      background: var(--surface-chh); color: var(--on-surface-v);
+      padding: 0.15rem 0.55rem; border-radius: 999px;
+    }
+    .game-rating { font-size: 0.73rem; font-weight: 700; color: var(--tertiary); }
+    .game-title  { font-size: 0.98rem; font-weight: 700; color: var(--on-bg); margin-bottom: 0.3rem; }
+    .game-desc   { font-size: 0.76rem; line-height: 1.5; color: var(--on-surface-v); }
+    .game-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.65rem 1rem 0.9rem;
+    }
+    .game-plays { font-size: 0.73rem; color: var(--on-surface-v); font-weight: 500; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center; padding: 4rem 2rem; color: var(--on-surface-v);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state p { font-size: 1rem; }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .page-btn {
+      background: var(--surface-c); border: none; cursor: pointer;
+      font-family: var(--font); font-weight: 600; font-size: 0.88rem;
+      color: var(--on-surface); padding: 0.55rem 1rem; border-radius: 999px;
+      transition: background 0.15s, color 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+      min-width: 40px;
+    }
+    .page-btn:hover:not(:disabled) { background: var(--surface-ch); transform: scale(1.07); }
+    .page-btn.active { background: var(--primary); color: var(--on-primary); }
+    .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .page-sep { color: var(--on-surface-v); font-size: 0.85rem; padding: 0 0.25rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--surface-c); padding: 3.5rem 3rem 2rem; margin-top: 2rem;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem; margin-bottom: 2.5rem;
+    }
+    .footer-brand p {
+      color: var(--on-surface-v); line-height: 1.65;
+      font-size: 0.88rem; margin-top: 0.9rem; max-width: 280px;
+    }
+    .footer-col h4 {
+      font-weight: 700; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--on-bg); margin-bottom: 1.1rem;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+    .footer-col a { text-decoration: none; color: var(--on-surface-v); font-size: 0.88rem; transition: color 0.18s; }
+    .footer-col a:hover { color: var(--primary); }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 1.5rem; border-top: 1px solid rgba(186,164,211,0.35);
+      font-size: 0.8rem; color: var(--on-surface-v);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .games-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 900px) {
+      nav { padding: 0.875rem 1.5rem; }
+      .nav-links { display: none; }
+      .page-header { padding: 2.5rem 1.5rem 2rem; }
+      .toolbar { padding: 1.2rem 1.5rem; top: 57px; }
+      .catalog { padding: 2rem 1.5rem 3rem; }
+      .games-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    }
+    @media (max-width: 480px) {
+      nav { padding: 0.75rem 1rem; }
+      .page-header { padding: 2rem 1rem 1.5rem; }
+      .toolbar { padding: 1rem; top: 53px; }
+      .catalog { padding: 1.5rem 1rem 2.5rem; }
+      .games-grid { grid-template-columns: 1fr; }
+      .chips-row .chip { font-size: 0.75rem; padding: 0.4rem 0.8rem; }
+      .chips-row .chip-icon { display: none; }
+      footer { padding: 2.5rem 1rem 1.5rem; }
+      .footer-grid { grid-template-columns: 1fr; gap: 1.75rem; }
+      .footer-bottom { flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <script src="shared/nav.js" data-base=""></script>
+
+  <!-- ═══════════════════════ PAGE HEADER ═══════════════════════ -->
+  <div class="page-header">
+    <h1>🎮 Tutti i Giochi</h1>
+    <p>Esplora l'intera libreria — gratis, senza download, direttamente nel browser.</p>
+  </div>
+
+  <!-- ═══════════════════════ TOOLBAR ═══════════════════════ -->
+  <div class="toolbar">
+    <div class="chips-row" id="chipsRow">
+      <button class="chip active" data-filter="tutti"      onclick="setFilter(this)"><span class="chip-icon">⭐</span>Tutti</button>
+      <button class="chip"        data-filter="azione"     onclick="setFilter(this)"><span class="chip-icon">🔥</span>Azione</button>
+      <button class="chip"        data-filter="puzzle"     onclick="setFilter(this)"><span class="chip-icon">🧩</span>Puzzle</button>
+      <button class="chip"        data-filter="corsa"      onclick="setFilter(this)"><span class="chip-icon">🏎️</span>Corsa</button>
+      <button class="chip"        data-filter="avventura"  onclick="setFilter(this)"><span class="chip-icon">🗡️</span>Avventura</button>
+      <button class="chip"        data-filter="musica"     onclick="setFilter(this)"><span class="chip-icon">🎵</span>Musica</button>
+      <button class="chip"        data-filter="simulazione" onclick="setFilter(this)"><span class="chip-icon">🍳</span>Simulazione</button>
+      <button class="chip"        data-filter="sport"      onclick="setFilter(this)"><span class="chip-icon">⚽</span>Sport</button>
+      <button class="chip"        data-filter="strategia"  onclick="setFilter(this)"><span class="chip-icon">🧠</span>Strategia</button>
+    </div>
+    <span class="result-count" id="resultCount"></span>
+  </div>
+
+  <!-- ═══════════════════════ CATALOG ═══════════════════════ -->
+  <div class="catalog">
+    <div class="games-grid" id="gamesGrid"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+  <script src="shared/footer.js" data-base=""></script>
+
+  <script>
+    // ── Catalogo giochi ──────────────────────────────────────
+    const GAMES = [
+      {
+        id: 'galaxy-hopper', title: 'Galaxy Hopper', genre: 'azione', genreLabel: 'Azione',
+        emoji: '🌌', thumb: 'th-galaxy', rating: '4.9', plays: '1.2M',
+        badge: 'top', badgeLabel: '⭐ Più Votati',
+        desc: 'Salta di pianeta in pianeta evitando asteroidi e raccogliendo stelle!'
+      },
+      {
+        id: 'jelly-blocks', title: 'Jelly Blocks', genre: 'puzzle', genreLabel: 'Puzzle',
+        emoji: '🟩', thumb: 'th-jelly', rating: '4.7', plays: '890K',
+        badge: null,
+        desc: 'Abbina i blocchi di gelatina colorati per liberare il tabellone e guadagnare punti.'
+      },
+      {
+        id: 'crystal-maze', title: 'Crystal Maze', genre: 'puzzle', genreLabel: 'Rompicapo',
+        emoji: '🔷', thumb: 'th-puzzle', rating: '4.6', plays: '430K',
+        badge: 'new', badgeLabel: '✨ New',
+        desc: 'Distruggi i cristalli con la pallina e supera tutti i livelli!'
+      },
+      {
+        id: 'sky-surfer', title: 'Sky Surfer', genre: 'azione', genreLabel: 'Azione',
+        emoji: '☁️', thumb: 'th-sky', rating: '4.5', plays: '620K',
+        badge: 'new', badgeLabel: '✨ New',
+        desc: 'Vola tra le nuvole schivando ostacoli e raccogliendo stelle!'
+      },
+      {
+        id: 'dragon-path', title: 'Dragon Path', genre: 'avventura', genreLabel: 'Avventura',
+        emoji: '🐉', thumb: 'th-ninja', rating: '4.6', plays: '510K',
+        badge: 'new', badgeLabel: '✨ New',
+        desc: 'Guida il drago attraverso labirinti sempre più complessi!'
+      },
+      {
+        id: 'meteor-dash', title: 'Meteor Dash', genre: 'azione', genreLabel: 'Azione',
+        emoji: '🛸', thumb: 'th-karts', rating: '4.5', plays: '278K',
+        badge: null,
+        desc: 'Pilota la tua nave spaziale e distruggi gli asteroidi prima che ti colpiscano!'
+      },
+      {
+        id: 'nutty-ninja', title: 'Nutty Ninja', genre: 'avventura', genreLabel: 'Avventura',
+        emoji: '🥷', thumb: 'th-ninja', rating: '4.6', plays: '310K',
+        badge: null,
+        desc: 'Attraversa strade e fiumi evitando le auto e saltando sui tronchi!'
+      },
+      {
+        id: 'turbo-karts', title: 'Turbo Karts', genre: 'corsa', genreLabel: 'Corsa',
+        emoji: '🏎️', thumb: 'th-karts', rating: '4.8', plays: '543K',
+        badge: 'new', badgeLabel: '🆕 New',
+        desc: 'Corsa frenetica su piste in prospettiva 3D, evita le auto avversarie!'
+      },
+      {
+        id: 'beat-bouncer', title: 'Beat Bouncer', genre: 'musica', genreLabel: 'Musica / Ritmo',
+        emoji: '🎵', thumb: 'th-beat', rating: '4.9', plays: '195K',
+        badge: 'new', badgeLabel: '🆕 New',
+        desc: 'Colpisci le note al ritmo giusto con D, F, J, K e mantieni il combo!'
+      },
+      {
+        id: 'groove-battle', title: 'Groove Battle', genre: 'musica', genreLabel: 'Musica',
+        emoji: '🎸', thumb: 'th-beat', rating: '4.7', plays: '162K',
+        badge: 'new', badgeLabel: '✨ New',
+        desc: 'Ricorda la sequenza di simboli e combatti i nemici con il ritmo!'
+      },
+    ];
+
+    const PAGE_SIZE = 20;
+    let currentPage = 1;
+    let currentFilter = 'tutti';
+
+    // ── Rendering card ───────────────────────────────────────
+    function cardHTML(g) {
+      const badgeHTML = g.badge
+        ? `<span class="badge badge-${g.badge}">${g.badgeLabel}</span>`
+        : '';
+      return `
+        <div class="game-card" onclick="location.href='games/${g.id}/game.html'" style="cursor:pointer">
+          ${badgeHTML}
+          <div class="game-thumb ${g.thumb}">${g.emoji}</div>
+          <div class="game-body">
+            <div class="game-meta">
+              <span class="game-genre">${g.genreLabel}</span>
+              <span class="game-rating">⭐ ${g.rating}</span>
+            </div>
+            <div class="game-title">${g.title}</div>
+            <div class="game-desc">${g.desc}</div>
+          </div>
+          <div class="game-footer">
+            <span class="game-plays">👾 ${g.plays} partite</span>
+            <a href="games/${g.id}/game.html" class="btn-primary-sm" onclick="event.stopPropagation()">Gioca Ora</a>
+          </div>
+        </div>`;
+    }
+
+    // ── Paginazione ──────────────────────────────────────────
+    function paginationHTML(total, current, totalPages) {
+      if (totalPages <= 1) return '';
+      let html = '';
+      html += `<button class="page-btn" onclick="goPage(${current - 1})" ${current === 1 ? 'disabled' : ''}>← Prec</button>`;
+
+      const pages = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (current > 3) pages.push('…');
+        for (let i = Math.max(2, current - 1); i <= Math.min(totalPages - 1, current + 1); i++) pages.push(i);
+        if (current < totalPages - 2) pages.push('…');
+        pages.push(totalPages);
+      }
+
+      for (const p of pages) {
+        if (p === '…') {
+          html += `<span class="page-sep">…</span>`;
+        } else {
+          html += `<button class="page-btn ${p === current ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+        }
+      }
+
+      html += `<button class="page-btn" onclick="goPage(${current + 1})" ${current === totalPages ? 'disabled' : ''}>Succ →</button>`;
+      return html;
+    }
+
+    // ── Render principale ────────────────────────────────────
+    function render() {
+      const filtered = currentFilter === 'tutti'
+        ? GAMES
+        : GAMES.filter(g => g.genre === currentFilter);
+
+      const total      = filtered.length;
+      const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+      currentPage      = Math.min(currentPage, totalPages);
+      const start      = (currentPage - 1) * PAGE_SIZE;
+      const slice      = filtered.slice(start, start + PAGE_SIZE);
+
+      // Contatore
+      const label = currentFilter === 'tutti'
+        ? `${total} giochi`
+        : `${total} giochi in questa categoria`;
+      document.getElementById('resultCount').textContent = label;
+
+      // Griglia
+      const grid = document.getElementById('gamesGrid');
+      if (slice.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <p>Nessun gioco in questa categoria al momento.</p>
+          </div>`;
+      } else {
+        grid.innerHTML = slice.map(cardHTML).join('');
+      }
+
+      // Paginazione
+      document.getElementById('pagination').innerHTML = paginationHTML(total, currentPage, totalPages);
+    }
+
+    // ── Azioni ──────────────────────────────────────────────
+    function setFilter(el) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      currentFilter = el.dataset.filter;
+      currentPage   = 1;
+      render();
+    }
+
+    function goPage(n) {
+      currentPage = n;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── Init ─────────────────────────────────────────────────
+    render();
+  </script>
+</body>
+</html>

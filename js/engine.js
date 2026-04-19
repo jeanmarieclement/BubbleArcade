@@ -171,6 +171,25 @@ window.BubbleEngine = (() => {
       if (update) _updateFn = update;
       if (render) _renderFn = render;
       input._install(canvas);
+
+      // Adatta il canvas alla larghezza del container su mobile
+      const fitCanvas = () => {
+        canvas.style.width  = width  + 'px';
+        canvas.style.height = height + 'px';
+        // Misura dopo che il browser ha applicato padding/layout
+        requestAnimationFrame(() => {
+          const wrap = canvas.parentElement;
+          const containerW = wrap ? wrap.getBoundingClientRect().width : window.innerWidth;
+          const available  = containerW - 8; // 4px margin per lato
+          if (available > 0 && available < width) {
+            const scale = available / width;
+            canvas.style.width  = Math.round(width  * scale) + 'px';
+            canvas.style.height = Math.round(height * scale) + 'px';
+          }
+        });
+      };
+      fitCanvas();
+      window.addEventListener('resize', fitCanvas);
     },
 
     setCallbacks(update, render) {

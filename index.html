@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="css/design-system.css">
   <style>
     html { scroll-behavior: smooth; }
@@ -35,8 +36,6 @@
       transition: color 0.2s;
     }
     .nav-links a:hover { color: var(--primary); }
-
-    .nav-right { display: flex; align-items: center; gap: 1rem; }
 
     /* ══════════════════════════════════════════
        HERO
@@ -357,6 +356,69 @@
     }
 
     /* ══════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════ */
+
+    /* — 960px: tablet landscape — */
+    @media (max-width: 960px) {
+      .hero { padding: 3rem 2rem 3rem 2.5rem; }
+      .games-grid { grid-template-columns: repeat(2, 1fr); }
+      .new-games-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    }
+
+    /* — 768px: tablet portrait — */
+    @media (max-width: 768px) {
+      nav { padding: 0.875rem 1.5rem; }
+      .nav-links { display: none; }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 3rem 1.5rem;
+        min-height: auto;
+      }
+      .hero-right { display: none; }
+      .hero-desc { max-width: 100%; }
+      .hero-stats { gap: 2rem; margin-top: 2.5rem; }
+
+      .cats { padding: 1.5rem; }
+      .section { padding: 3.5rem 1.5rem; }
+      .featured-wrap { padding: 0 1.5rem; }
+      .featured { padding: 2rem; }
+      .featured-emoji { font-size: 5rem; }
+    }
+
+    /* — 480px: mobile — */
+    @media (max-width: 480px) {
+      nav { padding: 0.75rem 1rem; }
+
+      .hero { padding: 2.5rem 1rem; }
+      .hero-desc { font-size: 0.95rem; margin-bottom: 1.5rem; }
+      .hero-actions { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
+      .hero-stats { gap: 1.5rem; margin-top: 2rem; }
+      .stat-num { font-size: 1.5rem; }
+
+      .cats { padding: 1.2rem 1rem; gap: 0.5rem; }
+      .chip { font-size: 0.78rem; padding: 0.42rem 0.85rem; }
+      .chip-icon { display: none; }
+
+      .section { padding: 2.5rem 1rem; }
+      .section-title { font-size: 1.45rem; }
+      .section-hd { margin-bottom: 1.5rem; }
+
+      .games-grid { grid-template-columns: 1fr; }
+      .new-games-grid { grid-template-columns: 1fr; }
+
+      .featured-wrap { padding: 0 1rem; }
+      .featured { grid-template-columns: 1fr; padding: 1.75rem 1.25rem; }
+      .featured-emoji { display: none; }
+
+      footer { padding: 2.5rem 1rem 1.5rem; margin-top: 3rem; }
+      .footer-grid { grid-template-columns: 1fr; gap: 1.75rem; }
+      .footer-bottom { flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+
+    /* ══════════════════════════════════════════
        ANIMATIONS
     ══════════════════════════════════════════ */
     @keyframes float-a {
@@ -377,22 +439,7 @@
 <body>
 
   <!-- ═══════════════════════ NAVBAR ═══════════════════════ -->
-  <nav>
-    <a href="#" class="logo">
-      <span class="logo-dot"></span>
-      Bubble Arcade
-    </a>
-    <ul class="nav-links">
-      <li><a href="#">Home</a></li>
-      <li><a href="#trending">Popolari</a></li>
-      <li><a href="#new">Nuovi Giochi</a></li>
-      <li><a href="#categories">Categorie</a></li>
-    </ul>
-    <div class="nav-right">
-      <button class="btn-nav-ghost">Accedi</button>
-      <a href="#" class="btn-primary-sm">Registrati Gratis</a>
-    </div>
-  </nav>
+  <script src="shared/nav.js" data-base=""></script>
 
 
   <!-- ═══════════════════════ HERO ═══════════════════════ -->
@@ -402,7 +449,7 @@
     <div class="blob blob-3"></div>
 
     <div class="hero-left">
-      <div class="hero-badge">🎮 100+ Giochi HTML5 Gratuiti</div>
+      <div class="hero-badge">🎮 Giochi HTML5 Gratuiti</div>
       <h1 class="hero-title">
         Gioca.<br><em>Vinci.</em><br>Ripeti.
       </h1>
@@ -413,21 +460,7 @@
       </p>
       <div class="hero-actions">
         <a href="#trending" class="btn-primary">Inizia a Giocare →</a>
-        <a href="#" class="btn-ghost-arrow">Sfoglia Tutti <span class="arrow">→</span></a>
-      </div>
-      <div class="hero-stats">
-        <div>
-          <div class="stat-num">2.4M+</div>
-          <div class="stat-lbl">Giocatori nel mondo</div>
-        </div>
-        <div>
-          <div class="stat-num">100+</div>
-          <div class="stat-lbl">Giochi gratuiti</div>
-        </div>
-        <div>
-          <div class="stat-num">0</div>
-          <div class="stat-lbl">Download necessari</div>
-        </div>
+        <a href="all-games.html" class="btn-ghost-arrow">Sfoglia Tutti <span class="arrow">→</span></a>
       </div>
     </div>
 
@@ -466,15 +499,15 @@
 
   <!-- ═══════════════════════ CATEGORIES ═══════════════════════ -->
   <div id="categories" class="cats reveal d-1">
-    <button class="chip active" onclick="setActive(this)"><span class="chip-icon">⭐</span>Tutti</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🔥</span>Azione</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🧩</span>Puzzle</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🏎️</span>Corsa</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🗡️</span>Avventura</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🎵</span>Musica</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🍳</span>Simulazione</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">⚽</span>Sport</button>
-    <button class="chip" onclick="setActive(this)"><span class="chip-icon">🧠</span>Strategia</button>
+    <button class="chip active" data-filter="tutti" onclick="setActive(this)"><span class="chip-icon">⭐</span>Tutti</button>
+    <button class="chip" data-filter="azione" onclick="setActive(this)"><span class="chip-icon">🔥</span>Azione</button>
+    <button class="chip" data-filter="puzzle" onclick="setActive(this)"><span class="chip-icon">🧩</span>Puzzle</button>
+    <button class="chip" data-filter="corsa" onclick="setActive(this)"><span class="chip-icon">🏎️</span>Corsa</button>
+    <button class="chip" data-filter="avventura" onclick="setActive(this)"><span class="chip-icon">🗡️</span>Avventura</button>
+    <button class="chip" data-filter="musica" onclick="setActive(this)"><span class="chip-icon">🎵</span>Musica</button>
+    <button class="chip" data-filter="simulazione" onclick="setActive(this)"><span class="chip-icon">🍳</span>Simulazione</button>
+    <button class="chip" data-filter="sport" onclick="setActive(this)"><span class="chip-icon">⚽</span>Sport</button>
+    <button class="chip" data-filter="strategia" onclick="setActive(this)"><span class="chip-icon">🧠</span>Strategia</button>
   </div>
 
 
@@ -482,11 +515,11 @@
   <section id="trending" class="section section-tinted">
     <div class="section-hd">
       <h2 class="section-title">🔥 Di Tendenza</h2>
-      <a href="#" class="section-link">Vedi tutti →</a>
+      <a href="all-games.html" class="section-link">Vedi tutti →</a>
     </div>
     <div class="games-grid">
 
-      <div class="game-card reveal d-1" onclick="location.href='games/galaxy-hopper/game.html'" style="cursor:pointer">
+      <div class="game-card reveal d-1" data-genre="azione" onclick="location.href='games/galaxy-hopper/game.html'" style="cursor:pointer">
         <span class="badge badge-top">⭐ Più Votati</span>
         <div class="game-thumb th-galaxy">🌌</div>
         <div class="game-body">
@@ -503,7 +536,7 @@
         </div>
       </div>
 
-      <div class="game-card reveal d-2" onclick="location.href='games/jelly-blocks/game.html'" style="cursor:pointer">
+      <div class="game-card reveal d-2" data-genre="puzzle" onclick="location.href='games/jelly-blocks/game.html'" style="cursor:pointer">
         <div class="game-thumb th-jelly">🟩</div>
         <div class="game-body">
           <div class="game-meta">
@@ -519,7 +552,7 @@
         </div>
       </div>
 
-      <div class="game-card reveal d-3" onclick="location.href='games/turbo-karts/game.html'" style="cursor:pointer">
+      <div class="game-card reveal d-3" data-genre="corsa" onclick="location.href='games/turbo-karts/game.html'" style="cursor:pointer">
         <span class="badge badge-new">🆕 New</span>
         <div class="game-thumb th-karts">🏎️</div>
         <div class="game-body">
@@ -536,7 +569,7 @@
         </div>
       </div>
 
-      <div class="game-card reveal d-4" onclick="location.href='games/nutty-ninja/game.html'" style="cursor:pointer">
+      <div class="game-card reveal d-4" data-genre="avventura" onclick="location.href='games/nutty-ninja/game.html'" style="cursor:pointer">
         <div class="game-thumb th-ninja">🥷</div>
         <div class="game-body">
           <div class="game-meta">
@@ -552,7 +585,7 @@
         </div>
       </div>
 
-      <div class="game-card reveal d-5" onclick="location.href='games/meteor-dash/game.html'" style="cursor:pointer">
+      <div class="game-card reveal d-5" data-genre="azione" onclick="location.href='games/meteor-dash/game.html'" style="cursor:pointer">
         <div class="game-thumb th-karts">🛸</div>
         <div class="game-body">
           <div class="game-meta">
@@ -568,7 +601,7 @@
         </div>
       </div>
 
-      <div class="game-card reveal d-6" onclick="location.href='games/beat-bouncer/game.html'" style="cursor:pointer">
+      <div class="game-card reveal d-6" data-genre="musica" onclick="location.href='games/beat-bouncer/game.html'" style="cursor:pointer">
         <span class="badge badge-new">🆕 New</span>
         <div class="game-thumb th-beat">🎵</div>
         <div class="game-body">
@@ -610,11 +643,11 @@
   <section id="new" class="section">
     <div class="section-hd">
       <h2 class="section-title">✨ Appena Usciti</h2>
-      <a href="#" class="section-link">Vedi tutti i nuovi →</a>
+      <a href="all-games.html" class="section-link">Vedi tutti i nuovi →</a>
     </div>
     <div class="new-games-grid">
 
-      <div class="new-card" onclick="location.href='games/crystal-maze/game.html'" style="cursor:pointer">
+      <div class="new-card" data-genre="puzzle" onclick="location.href='games/crystal-maze/game.html'" style="cursor:pointer">
         <div class="new-thumb-sm th-puzzle">🔷</div>
         <div class="new-info">
           <div class="new-title">Crystal Maze</div>
@@ -624,7 +657,7 @@
         <a href="games/crystal-maze/game.html" class="btn-primary-sm" onclick="event.stopPropagation()">Gioca</a>
       </div>
 
-      <div class="new-card" onclick="location.href='games/sky-surfer/game.html'" style="cursor:pointer">
+      <div class="new-card" data-genre="azione" onclick="location.href='games/sky-surfer/game.html'" style="cursor:pointer">
         <div class="new-thumb-sm th-sky">☁️</div>
         <div class="new-info">
           <div class="new-title">Sky Surfer</div>
@@ -634,7 +667,7 @@
         <a href="games/sky-surfer/game.html" class="btn-primary-sm" onclick="event.stopPropagation()">Gioca</a>
       </div>
 
-      <div class="new-card" onclick="location.href='games/groove-battle/game.html'" style="cursor:pointer">
+      <div class="new-card" data-genre="musica" onclick="location.href='games/groove-battle/game.html'" style="cursor:pointer">
         <div class="new-thumb-sm th-beat">🎸</div>
         <div class="new-info">
           <div class="new-title">Groove Battle</div>
@@ -644,7 +677,7 @@
         <a href="games/groove-battle/game.html" class="btn-primary-sm" onclick="event.stopPropagation()">Gioca</a>
       </div>
 
-      <div class="new-card" onclick="location.href='games/dragon-path/game.html'" style="cursor:pointer">
+      <div class="new-card" data-genre="avventura" onclick="location.href='games/dragon-path/game.html'" style="cursor:pointer">
         <div class="new-thumb-sm th-ninja">🐉</div>
         <div class="new-info">
           <div class="new-title">Dragon Path</div>
@@ -654,7 +687,7 @@
         <a href="games/dragon-path/game.html" class="btn-primary-sm" onclick="event.stopPropagation()">Gioca</a>
       </div>
 
-      <div class="new-card" onclick="location.href='games/meteor-dash/game.html'" style="cursor:pointer">
+      <div class="new-card" data-genre="azione" onclick="location.href='games/meteor-dash/game.html'" style="cursor:pointer">
         <div class="new-thumb-sm th-karts">🛸</div>
         <div class="new-info">
           <div class="new-title">Meteor Dash</div>
@@ -664,7 +697,7 @@
         <a href="games/meteor-dash/game.html" class="btn-primary-sm" onclick="event.stopPropagation()">Gioca</a>
       </div>
 
-      <div class="new-card" onclick="location.href='games/nutty-ninja/game.html'" style="cursor:pointer">
+      <div class="new-card" data-genre="avventura" onclick="location.href='games/nutty-ninja/game.html'" style="cursor:pointer">
         <div class="new-thumb-sm th-ninja">🥷</div>
         <div class="new-info">
           <div class="new-title">Nutty Ninja</div>
@@ -678,54 +711,18 @@
   </section>
 
 
-  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
-  <footer>
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a href="#" class="logo">
-          <span class="logo-dot"></span>
-          Bubble Arcade
-        </a>
-        <p>Il miglior portale di giochi HTML5 gratuiti sul web. Nessun download, nessuna pubblicità che interrompe il gioco — solo puro divertimento, per sempre gratuito.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Giochi</h4>
-        <ul>
-          <li><a href="#">Popolari</a></li>
-          <li><a href="#">Nuovi Giochi</a></li>
-          <li><a href="#">Categorie</a></li>
-          <li><a href="#">Classifiche</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Azienda</h4>
-        <ul>
-          <li><a href="#">Chi Siamo</a></li>
-          <li><a href="#">Blog</a></li>
-          <li><a href="#">Lavora con Noi</a></li>
-          <li><a href="#">Contatti</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Legale</h4>
-        <ul>
-          <li><a href="#">Privacy Policy</a></li>
-          <li><a href="#">Termini di Gioco</a></li>
-          <li><a href="#">Guida Genitori</a></li>
-          <li><a href="#">Cookie Policy</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2026 Bubble Arcade. Tutti i diritti riservati.</span>
-      <span>Fatto con ❤️ per i giocatori di tutto il mondo</span>
-    </div>
-  </footer>
+  <script src="shared/footer.js" data-base=""></script>
 
   <script>
     function setActive(el) {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       el.classList.add('active');
+
+      const filter = el.dataset.filter;
+      document.querySelectorAll('.game-card, .new-card').forEach(card => {
+        const match = filter === 'tutti' || card.dataset.genre === filter;
+        card.style.display = match ? '' : 'none';
+      });
     }
 
     // Scroll-triggered reveal for game cards

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cookie Policy – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <style>
+    html { scroll-behavior: smooth; }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: rgba(252,244,255,0.88); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(186,164,211,0.25);
+    }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--on-surface-v); font-weight: 500; font-size: 0.92rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--primary); }
+
+    .page-hero {
+      background: linear-gradient(160deg, var(--surface-lo) 0%, var(--bg) 100%);
+      padding: 4rem 3rem 3rem;
+      border-bottom: 1px solid rgba(186,164,211,0.15);
+    }
+    .page-hero .label { font-size: 0.72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); margin-bottom: .75rem; }
+    .page-hero h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.025em; color: var(--on-bg); margin-bottom: .5rem; }
+    .page-hero .meta { font-size: .85rem; color: var(--on-surface-v); }
+
+    .content { max-width: 760px; margin: 0 auto; padding: 4rem 3rem 6rem; }
+    .content h2 { font-size: 1.25rem; font-weight: 800; color: var(--on-bg); margin: 2.5rem 0 .75rem; letter-spacing: -.015em; }
+    .content h2:first-child { margin-top: 0; }
+    .content p { font-size: .95rem; line-height: 1.75; color: var(--on-surface-v); margin-bottom: 1rem; }
+    .content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .content ul li { font-size: .95rem; line-height: 1.75; color: var(--on-surface-v); margin-bottom: .3rem; }
+    .content strong { color: var(--on-bg); font-weight: 700; }
+    .content a { color: var(--primary); text-decoration: none; }
+    .content a:hover { text-decoration: underline; }
+    .info-box { background: var(--surface-lo); border-left: 4px solid var(--tertiary-c); border-radius: 0 1rem 1rem 0; padding: 1rem 1.25rem; margin: 1.5rem 0; font-size: .9rem; color: var(--on-surface-v); line-height: 1.6; }
+
+    .cookie-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .88rem; }
+    .cookie-table th { background: var(--surface-lo); color: var(--on-bg); font-weight: 700; padding: .7rem 1rem; text-align: left; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+    .cookie-table td { padding: .65rem 1rem; border-bottom: 1px solid rgba(186,164,211,.2); color: var(--on-surface-v); vertical-align: top; line-height: 1.5; }
+    .cookie-table tr:last-child td { border-bottom: none; }
+    .cookie-table th:first-child, .cookie-table td:first-child { border-radius: .5rem 0 0 .5rem; }
+
+    footer { background: var(--surface-c); padding: 3.5rem 3rem 2rem; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; margin-bottom: 2.5rem; }
+    .footer-brand p { color: var(--on-surface-v); font-size: .88rem; margin-top: .9rem; max-width: 280px; line-height: 1.65; }
+    .footer-col h4 { font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--on-bg); margin-bottom: 1.1rem; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: .65rem; }
+    .footer-col a { text-decoration: none; color: var(--on-surface-v); font-size: .88rem; transition: color .18s; }
+    .footer-col a:hover { color: var(--primary); }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid rgba(186,164,211,.35); font-size: .8rem; color: var(--on-surface-v); }
+
+    @media (max-width: 768px) {
+      nav { padding: .875rem 1.5rem; }
+      .nav-links,
+      .page-hero { padding: 2.5rem 1.5rem 2rem; }
+      .content { padding: 2.5rem 1.5rem 4rem; }
+      .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+      footer { padding: 2.5rem 1.5rem 1.5rem; }
+      .cookie-table { display: block; overflow-x: auto; }
+    }
+    @media (max-width: 480px) {
+      nav { padding: .75rem 1rem; }
+      .page-hero { padding: 2rem 1rem 1.5rem; }
+      .content { padding: 2rem 1rem 3rem; }
+      footer { padding: 2rem 1rem 1.5rem; }
+      .footer-bottom { flex-direction: column; gap: .5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <script src="shared/nav.js" data-base=""></script>
+
+  <div class="page-hero">
+    <div class="label">Legale</div>
+    <h1>Cookie Policy</h1>
+    <p class="meta">Ultimo aggiornamento: 19 aprile 2026</p>
+  </div>
+
+  <div class="content">
+    <div class="info-box">
+      🍪 Bubble Arcade usa solo <strong>storage tecnico locale</strong> (localStorage). Non usa cookie di terze parti né cookie di profilazione. Questa pagina spiega esattamente cosa viene memorizzato e perché.
+    </div>
+
+    <h2>1. Cosa sono i cookie e il localStorage</h2>
+    <p>I cookie sono piccoli file di testo salvati dal browser su richiesta di un sito web. Il <strong>localStorage</strong> è un meccanismo simile, ma i dati rimangono sul dispositivo anche dopo la chiusura del browser e non vengono mai inviati automaticamente al server.</p>
+    <p>Bubble Arcade non usa cookie tradizionali. Usa esclusivamente <strong>localStorage</strong> per salvare dati sul tuo dispositivo.</p>
+
+    <h2>2. Dati salvati in localStorage</h2>
+    <table class="cookie-table">
+      <thead>
+        <tr>
+          <th>Chiave</th>
+          <th>Contenuto</th>
+          <th>Scopo</th>
+          <th>Scadenza</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>ba_scores_&lt;game-id&gt;</code></td>
+          <td>Array JSON con i top-10 punteggi per ciascun gioco</td>
+          <td>Classifica locale del gioco</td>
+          <td>Permanente (fino a cancellazione manuale)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Nessun altro dato viene memorizzato localmente da Bubble Arcade.</p>
+
+    <h2>3. Cookie tecnici del browser</h2>
+    <p>Il browser potrebbe memorizzare cookie tecnici minimi per la gestione della sessione HTTPS o del server. Questi sono al di fuori del controllo di Bubble Arcade e non contengono dati personali identificativi.</p>
+
+    <h2>4. Google Fonts</h2>
+    <p>Il sito carica il font <em>Plus Jakarta Sans</em> tramite Google Fonts. Google potrebbe impostare cookie propri durante questa richiesta. Per maggiori informazioni, consulta la <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy di Google</a>.</p>
+
+    <h2>5. Come cancellare i dati localStorage</h2>
+    <p>Puoi cancellare tutti i dati salvati da Bubble Arcade in qualsiasi momento:</p>
+    <ul>
+      <li><strong>Chrome/Edge:</strong> Impostazioni → Privacy e sicurezza → Cancella dati di navigazione → Dati dei siti</li>
+      <li><strong>Firefox:</strong> Impostazioni → Privacy e sicurezza → Cookie e dati dei siti → Gestisci dati</li>
+      <li><strong>Safari:</strong> Preferenze → Privacy → Gestisci dati siti web</li>
+    </ul>
+    <p>In alternativa, apri la console sviluppatore del browser (<kbd>F12</kbd>) e digita <code>localStorage.clear()</code> per cancellare tutti i punteggi salvati.</p>
+
+    <h2>6. Contatti</h2>
+    <p>Per qualsiasi domanda su questa Cookie Policy, scrivi a <a href="mailto:[email]">[email]</a>.</p>
+  </div>
+
+  <script src="shared/footer.js" data-base=""></script>
+</body>
+</html>
