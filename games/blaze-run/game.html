@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blaze Run – Bubble Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; }
+
+    .game-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .75rem 2rem;
+      background: rgba(252,244,255,.85); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid rgba(186,164,211,.25);
+    }
+    .score-display { text-align: right; }
+    .score-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--on-surface-v); }
+    .score-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+
+    .game-layout {
+      flex: 1; display: grid;
+      grid-template-columns: 200px auto 200px;
+      gap: 1.5rem; align-items: start;
+      padding: 1.5rem;
+      max-width: 1020px; margin: 0 auto; width: 100%;
+    }
+    .sidebar h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .5rem; }
+    .sidebar p  { font-size: .85rem; line-height: 1.6; color: var(--on-surface-v); margin-bottom: 1.25rem; }
+    .controls-box { background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; }
+    .controls-box h3 { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg); }
+    .controls-box ul { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .controls-box li { font-size: .82rem; color: var(--on-surface-v); }
+    .controls-box kbd {
+      background: var(--surface-chh); border-radius: .4rem; padding: .1rem .4rem;
+      font-size: .72rem; font-weight: 700; font-family: monospace; color: var(--on-bg);
+    }
+    .leaderboard-box { background: var(--surface-lo); border-radius: 1.2rem; padding: 1rem 1.2rem; margin-top: 1.25rem; }
+    .leaderboard-box h3 { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; color: var(--on-bg); }
+    #leaderboardList { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    #leaderboardList li { display: flex; justify-content: space-between; font-size: .82rem; }
+    .lb-rank  { color: var(--on-surface-v); min-width: 24px; }
+    .lb-name  { color: var(--on-surface); flex: 1; }
+    .lb-score { font-weight: 700; color: var(--primary); }
+    .lb-empty { color: var(--on-surface-v); font-style: italic; }
+
+    .game-center { display: flex; justify-content: center; }
+    .canvas-wrap { position: relative; border-radius: 1.5rem; overflow: hidden; box-shadow: var(--shadow-ambi); }
+    #gameCanvas { display: block; }
+
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(252,244,255,.92); backdrop-filter: blur(8px); z-index: 10;
+    }
+    .overlay-card {
+      background: var(--surface-0); border-radius: 2rem; padding: 2rem 2.5rem;
+      text-align: center; box-shadow: var(--shadow-ambi);
+      display: flex; flex-direction: column; align-items: center; gap: .85rem;
+      min-width: 220px;
+    }
+    .overlay-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; color: var(--on-bg); }
+    .overlay-sub   { font-size: .88rem; color: var(--on-surface-v); margin-top: -.25rem; }
+    .overlay-score-big { font-size: 2.6rem; font-weight: 800; color: var(--primary); letter-spacing: -.03em; }
+    .high-score-badge {
+      background: var(--tertiary-c); color: var(--on-tertiary-c);
+      font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+      padding: .3rem .8rem; border-radius: 999px;
+    }
+
+    @media (max-width: 700px) {
+      .game-layout { grid-template-columns: 1fr !important; padding: 1rem !important; }
+      .sidebar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../../index.html" class="btn-ghost-arrow"><span class="arrow">←</span> Indietro</a>
+    <a href="../../index.html" class="logo"><span class="logo-dot"></span>Bubble Arcade</a>
+    <div class="score-display">
+      <div class="score-label">Punteggio</div>
+      <div class="score-value" id="scoreDisplay">0</div>
+    </div>
+  </nav>
+
+  <div class="game-layout">
+    <aside class="sidebar">
+      <h2>Blaze Run</h2>
+      <p>Corri il più lontano possibile! Salta le buche, schiaccia i nemici e raccogli le monete. La velocità cresce col tempo.</p>
+      <div class="controls-box">
+        <h3>Controlli</h3>
+        <ul>
+          <li><kbd>↑</kbd> / <kbd>Space</kbd> — Salta</li>
+          <li><kbd>↑↑</kbd> doppio — Doppio salto</li>
+          <li><kbd>Tap</kbd> — Salta (mobile)</li>
+          <li>Schiaccia il nemico da sopra!</li>
+        </ul>
+      </div>
+    </aside>
+
+    <div class="game-center">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="overlay" id="overlayIdle">
+          <div class="overlay-card">
+            <div class="overlay-title">🏃 Blaze Run</div>
+            <div class="overlay-sub">Corri, salta, sopravvivi!</div>
+            <button class="btn-primary" id="btnStart">Inizia</button>
+          </div>
+        </div>
+
+        <div class="overlay hidden" id="overlayGameover">
+          <div class="overlay-card">
+            <div class="overlay-title">Game Over</div>
+            <div class="overlay-score-big" id="finalScore">0</div>
+            <div class="high-score-badge hidden" id="newHighScoreBadge">🏆 Nuovo Record!</div>
+            <button class="btn-primary" id="btnRestart">Riprova</button>
+            <a href="../../index.html" class="btn-ghost-arrow" style="margin-top:.25rem">← Portale <span class="arrow">→</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div class="leaderboard-box">
+        <h3>🏆 Record</h3>
+        <ol id="leaderboardList"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../../js/engine.js"></script>
+  <script src="../../js/sprites.js"></script>
+  <script src="../../shared/scores.js"></script>
+  <script>
+  const GAME_ID = 'blaze-run';
+  const canvas   = document.getElementById('gameCanvas');
+  const scoreEl  = document.getElementById('scoreDisplay');
+  const overlayIdle = document.getElementById('overlayIdle');
+  const overlayGO   = document.getElementById('overlayGameover');
+  const finalScoreEl = document.getElementById('finalScore');
+  const hsBadge      = document.getElementById('newHighScoreBadge');
+
+  BubbleEngine.init(canvas, { width: 480, height: 300 });
+  BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+
+  // ═══ COSTANTI ═══════════════════════════════════════════════
+  const W = 480, H = 300;
+  const GROUND_Y   = 250;   // superficie del terreno
+  const PLAYER_SX  = 80;    // posizione X fissa del player sullo schermo
+  const PW = 24, PH = 27;   // dimensioni player (sprite 8×9 × scale 3)
+  const EW = 18, EH = 18;   // dimensioni nemico (sprite 6×6 × scale 3)
+  const GRAVITY    = 920;
+  const JUMP_VY    = -405;
+  const DJUMP_VY   = -340;
+  const MAX_FALL   = 700;
+  const BASE_SPEED = 200;
+
+  // ═══ SPRITE HERO (8×9, 4 frame: run A, run B, run C, salto) ═
+  const HERO_DEF = {
+    scale: 3,
+    // 1=dorato(testa) 2=rosso(corpo) 3=blu(pantaloni) 4=scuro(occhi) 5=grigio(scarpe) 6=bianco
+    palette: ['#fbbf24','#ef4444','#1e40af','#1a1a2e','#78716c','#ffffff'],
+    frames: [
+      // run A – gamba destra avanti
+      [[0,0,1,1,1,0,0,0],
+       [0,1,6,4,1,1,0,0],
+       [0,0,1,1,1,0,0,0],
+       [0,0,2,2,2,0,0,0],
+       [0,2,2,2,2,0,0,0],
+       [0,0,2,2,0,0,0,0],
+       [0,3,3,0,3,0,0,0],
+       [0,3,0,0,3,3,0,0],
+       [5,5,0,0,0,5,0,0]],
+      // run B – gamba sinistra avanti
+      [[0,0,1,1,1,0,0,0],
+       [0,1,6,4,1,1,0,0],
+       [0,0,1,1,1,0,0,0],
+       [0,0,2,2,2,0,0,0],
+       [0,2,2,2,2,0,0,0],
+       [0,0,2,2,0,0,0,0],
+       [0,3,0,0,3,3,0,0],
+       [0,3,3,0,0,3,0,0],
+       [0,5,0,0,5,5,0,0]],
+      // run C – entrambe le gambe
+      [[0,0,1,1,1,0,0,0],
+       [0,1,6,4,1,1,0,0],
+       [0,0,1,1,1,0,0,0],
+       [0,0,2,2,2,0,0,0],
+       [0,2,2,2,2,0,0,0],
+       [0,0,2,2,0,0,0,0],
+       [0,3,3,0,3,0,0,0],
+       [0,0,3,3,3,0,0,0],
+       [0,5,5,5,5,0,0,0]],
+      // salto – gambe piegate in su
+      [[0,0,1,1,1,0,0,0],
+       [0,1,6,4,1,1,0,0],
+       [0,0,1,1,1,0,0,0],
+       [0,0,2,2,2,0,0,0],
+       [0,2,2,2,2,0,0,0],
+       [0,2,0,0,2,0,0,0],
+       [3,3,0,0,3,3,0,0],
+       [0,5,0,0,5,0,0,0],
+       [0,0,0,0,0,0,0,0]],
+    ]
+  };
+
+  // ═══ SPRITE NEMICO (6×6, 2 frame) ═══════════════════════════
+  const ENEMY_DEF = {
+    scale: 3,
+    // 1=verde chiaro 2=verde scuro 3=pupilla 4=riflesso bianco
+    palette: ['#4ade80','#16a34a','#1a1a2e','#ffffff'],
+    frames: [
+      [[0,1,1,1,1,0],
+       [1,1,1,1,1,1],
+       [1,3,4,1,3,1],
+       [1,1,1,1,1,1],
+       [0,2,1,1,2,0],
+       [2,2,0,0,2,2]],
+      [[0,1,1,1,1,0],
+       [1,1,1,1,1,1],
+       [1,4,3,1,4,1],
+       [1,1,1,1,1,1],
+       [2,2,1,1,2,2],
+       [2,0,0,0,0,2]],
+    ]
+  };
+
+  const heroSprites  = Sprites.prerender(HERO_DEF);
+  const enemySprites = Sprites.prerender(ENEMY_DEF);
+
+  // ═══ STATO DI GIOCO ══════════════════════════════════════════
+  const Game = {
+    state: 'idle',
+    camX:  0,
+    speed: BASE_SPEED,
+    time:  0,
+    score: 0,
+    genX:  0,
+
+    player: {
+      y: GROUND_Y - PH,
+      vy: 0,
+      onGround: true,
+      jumpsLeft: 2,
+      frameIdx: 0,
+      frameClock: 0,
+      alive: true,
+      deathClock: 0,
+    },
+
+    terrain:   [],  // {wx, surfaceY, w, type:'ground'|'platform'}
+    coins:     [],  // {wx, y, bob, collected}
+    enemies:   [],  // {wx, y, vx, alive, frame, clock}
+    particles: [],  // {x, y, vx, vy, life, color}
+
+    // ── Reset ─────────────────────────────────────────────────
+    reset() {
+      this.camX  = 0;
+      this.speed = BASE_SPEED;
+      this.time  = 0;
+      this.score = 0;
+      this.genX  = 0;
+      this.terrain = []; this.coins = []; this.enemies = []; this.particles = [];
+      const p = this.player;
+      p.y = GROUND_Y - PH; p.vy = 0; p.onGround = true;
+      p.jumpsLeft = 2; p.frameIdx = 0; p.frameClock = 0;
+      p.alive = true; p.deathClock = 0;
+      scoreEl.textContent = '0';
+      this._generate();
+    },
+
+    // ── Generazione mondo ─────────────────────────────────────
+    _generate() {
+      while (this.genX < this.camX + W + 700) this._nextSegment();
+    },
+
+    _nextSegment() {
+      const diff = Math.min(1, this.score / 800);
+      const safe = this.genX < 700;  // zona sicura iniziale
+
+      if (safe || Math.random() > 0.16 + diff * 0.09) {
+        // ── Terreno piatto ─────────────────────────────────
+        const w = 110 + Math.random() * 170 + (1 - diff) * 50;
+        this.terrain.push({ wx: this.genX, surfaceY: GROUND_Y, w, type: 'ground' });
+
+        // Piattaforma sopraelevata
+        if (!safe && Math.random() < 0.48) {
+          const pw  = 64 + Math.random() * 80;
+          const psy = GROUND_Y - 78 - Math.random() * 52;
+          const px  = this.genX + 28 + Math.random() * Math.max(8, w - pw - 56);
+          this.terrain.push({ wx: px, surfaceY: psy, w: pw, type: 'platform' });
+          // Monete sulla piattaforma
+          for (let c = 0; c < 3 + Math.floor(Math.random() * 3); c++)
+            this._addCoin(px + 8 + c * 22, psy - 22);
+          // Nemico sulla piattaforma
+          if (diff > 0.18 && Math.random() < 0.3)
+            this._spawnEnemy(px + pw * 0.5, psy - EH);
+        }
+
+        // Monete a terra
+        if (Math.random() < 0.5) {
+          const n = 3 + Math.floor(Math.random() * 4);
+          for (let c = 0; c < n; c++)
+            this._addCoin(this.genX + 16 + c * 22, GROUND_Y - 28);
+        }
+
+        // Nemico a terra
+        if (!safe && diff > 0.08 && Math.random() < 0.22)
+          this._spawnEnemy(this.genX + w * 0.5, GROUND_Y - EH);
+
+        this.genX += w;
+      } else {
+        // ── Buca ───────────────────────────────────────────
+        const gapW = 52 + Math.random() * (38 + diff * 80);
+        this.genX += gapW;
+      }
+    },
+
+    _addCoin(wx, y) {
+      this.coins.push({ wx, y, bob: Math.random() * Math.PI * 2, collected: false });
+    },
+    _spawnEnemy(wx, y) {
+      this.enemies.push({ wx, y, vx: -(36 + Math.random() * 28), alive: true, frame: 0, clock: 0 });
+    },
+
+    // ── Update ────────────────────────────────────────────────
+    update(dt) {
+      if (this.state !== 'playing') return;
+      this.time += dt;
+
+      // Particelle (aggiornate sempre, anche in morte)
+      this.particles.forEach(pt => {
+        pt.x  += pt.vx * dt; pt.y += pt.vy * dt;
+        pt.vy += 350 * dt;   pt.life -= dt;
+      });
+      this.particles = this.particles.filter(pt => pt.life > 0);
+
+      const p = this.player;
+
+      if (!p.alive) {
+        // Animazione di morte
+        p.deathClock += dt;
+        p.vy = Math.min(p.vy + GRAVITY * dt, MAX_FALL);
+        p.y  += p.vy * dt;
+        if (p.deathClock > 1.1) showGameOver(this.score);
+        return;
+      }
+
+      // ── Input ──────────────────────────────────────────────
+      const ip = BubbleEngine.input;
+      const wantJump = ip.justPressed.has('Space') ||
+                       ip.justPressed.has('ArrowUp') ||
+                       ip.pointer.justDown;
+      if (wantJump && p.jumpsLeft > 0) {
+        p.vy = p.jumpsLeft === 2 ? JUMP_VY : DJUMP_VY;
+        p.onGround = false;
+        p.jumpsLeft--;
+        BubbleEngine.audio.beep(p.jumpsLeft === 1 ? 490 : 560, 0.07, 'sine', 0.32);
+      }
+
+      // ── Velocità e camera ─────────────────────────────────
+      this.speed = BASE_SPEED + this.time * 7;
+      const scrolled = this.speed * dt;
+      this.camX  += scrolled;
+      this.score += Math.round(scrolled / 8);
+      scoreEl.textContent = this.score;
+
+      // ── Fisica player ──────────────────────────────────────
+      p.vy = Math.min(p.vy + GRAVITY * dt, MAX_FALL);
+      const newY = p.y + p.vy * dt;
+
+      // Collisione con terreno/piattaforme
+      p.onGround = false;
+      const pwx = this.camX + PLAYER_SX;  // world X del player
+      for (const seg of this.terrain) {
+        if (pwx + PW <= seg.wx || pwx >= seg.wx + seg.w) continue;
+        // Atterraggio dall'alto
+        if (p.vy >= 0 && p.y + PH <= seg.surfaceY + 3 && newY + PH >= seg.surfaceY) {
+          p.y = seg.surfaceY - PH;
+          p.vy = 0;
+          p.onGround = true;
+          p.jumpsLeft = 2;
+          break;
+        }
+      }
+      if (!p.onGround) p.y = newY;
+
+      // Cade nella buca
+      if (p.y > H + 60) this._die();
+
+      // Animazione corsa
+      if (p.onGround) {
+        p.frameClock += dt;
+        if (p.frameClock > 0.095) { p.frameClock = 0; p.frameIdx = (p.frameIdx + 1) % 3; }
+      } else {
+        p.frameIdx = 3;  // frame salto
+      }
+
+      // ── Aggiorna nemici ────────────────────────────────────
+      this.enemies.forEach(e => {
+        if (!e.alive) return;
+        e.wx += e.vx * dt;
+        e.clock += dt;
+        if (e.clock > 0.38) { e.clock = 0; e.frame ^= 1; }
+
+        // Rimbalzo al bordo della piattaforma/terra
+        const onSeg = this.terrain.some(s =>
+          e.wx + EW > s.wx && e.wx < s.wx + s.w &&
+          Math.abs(e.y + EH - s.surfaceY) < 5
+        );
+        if (!onSeg) e.vx = -e.vx;
+
+        // Collisione player ↔ nemico
+        if (!BubbleEngine.utils.AABB(pwx, p.y, PW, PH, e.wx, e.y, EW, EH)) return;
+
+        // Schiacciato da sopra?
+        if (p.vy > 60 && p.y + PH < e.y + EH * 0.55 + 6) {
+          e.alive = false;
+          p.vy = -270;
+          this.score += 20;
+          scoreEl.textContent = this.score;
+          BubbleEngine.audio.beep(280, 0.12, 'square', 0.35);
+          this._burst(e.wx - this.camX + EW / 2, e.y + EH / 2, '#4ade80', 7);
+        } else {
+          this._die();
+        }
+      });
+
+      // ── Raccolta monete ────────────────────────────────────
+      const pcx = pwx + PW / 2, pcy = p.y + PH / 2;
+      this.coins.forEach(c => {
+        if (c.collected) return;
+        const dx = (c.wx + 7) - pcx, dy = (c.y + 7) - pcy;
+        if (dx * dx + dy * dy < 900) {  // raggio ~30px
+          c.collected = true;
+          this.score += 5;
+          scoreEl.textContent = this.score;
+          BubbleEngine.audio.beep(900, 0.055, 'sine', 0.28);
+          this._burst(c.wx - this.camX + 7, c.y + 7, '#fdd400', 5);
+        }
+      });
+
+      // ── Genera più mondo ───────────────────────────────────
+      this._generate();
+
+      // Pulizia oggetti fuori schermo
+      const cleanX = this.camX - 300;
+      this.terrain = this.terrain.filter(s => s.wx + s.w > cleanX);
+      this.coins   = this.coins.filter(c => !c.collected || c.wx > cleanX);
+      this.enemies = this.enemies.filter(e => e.alive && e.wx + EW > cleanX);
+    },
+
+    _die() {
+      if (!this.player.alive) return;
+      this.player.alive = false;
+      this.player.vy = -340;
+      BubbleEngine.audio.noise(0.32, 0.55);
+    },
+
+    _burst(sx, sy, color, n) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const spd = 60 + Math.random() * 90;
+        this.particles.push({ x: sx, y: sy, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd - 70, life: 0.45, color });
+      }
+    },
+
+    // ── Render ────────────────────────────────────────────────
+    render(ctx) {
+      // Cielo
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#60a5fa');
+      sky.addColorStop(1, '#bfdbfe');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+
+      // Nuvole (parallasse 0.12×)
+      const cx = this.camX * 0.12;
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      [0, 200, 380, 560, 760, 940].forEach((seed, i) => {
+        const bx = ((seed - cx) % (W + 360) + W + 360) % (W + 360) - 300;
+        const by = 18 + (i % 3) * 22;
+        ctx.beginPath(); ctx.arc(bx,      by,     18, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(bx + 22, by - 9, 24, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(bx + 46, by,     16, 0, Math.PI * 2); ctx.fill();
+        ctx.fillRect(bx - 2, by, 62, 18);
+      });
+
+      // Montagne lontane (parallasse 0.14×)
+      const mx = this.camX * 0.14;
+      ctx.fillStyle = '#93c5fd';
+      for (let i = 0; i < 7; i++) {
+        const bx = ((i * 160 - mx) % (W + 320) + W + 320) % (W + 320) - 320;
+        const bh = 55 + (i % 3) * 28;
+        ctx.beginPath(); ctx.moveTo(bx, H); ctx.lineTo(bx + 80, H - bh); ctx.lineTo(bx + 160, H); ctx.fill();
+      }
+
+      // Colline medie (parallasse 0.38×)
+      const hx = this.camX * 0.38;
+      ctx.fillStyle = '#86efac';
+      for (let i = 0; i < 5; i++) {
+        const bx = ((i * 220 - hx) % (W + 440) + W + 440) % (W + 440) - 440;
+        ctx.beginPath(); ctx.arc(bx + 110, GROUND_Y + 14, 100, Math.PI, 0); ctx.fill();
+      }
+
+      // ── Terreno ────────────────────────────────────────────
+      this.terrain.forEach(seg => {
+        const sx = seg.wx - this.camX;
+        if (sx > W + 4 || sx + seg.w < -4) return;
+
+        if (seg.type === 'ground') {
+          // Erba
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(sx, seg.surfaceY, seg.w, 8);
+          // Terra
+          const dirt = ctx.createLinearGradient(0, seg.surfaceY + 8, 0, H);
+          dirt.addColorStop(0, '#92400e'); dirt.addColorStop(1, '#78350f');
+          ctx.fillStyle = dirt;
+          ctx.fillRect(sx, seg.surfaceY + 8, seg.w, H - seg.surfaceY);
+          // Fili d'erba
+          ctx.fillStyle = '#4ade80';
+          for (let gx = sx + 5; gx < sx + seg.w - 4; gx += 11) {
+            ctx.fillRect(gx,     seg.surfaceY - 3, 2, 4);
+            ctx.fillRect(gx + 4, seg.surfaceY - 2, 2, 3);
+          }
+        } else {
+          // Piattaforma
+          const gr = ctx.createLinearGradient(sx, seg.surfaceY, sx, seg.surfaceY + 12);
+          gr.addColorStop(0, '#4ade80'); gr.addColorStop(1, '#22c55e');
+          ctx.fillStyle = gr;
+          ctx.beginPath(); ctx.roundRect(sx, seg.surfaceY, seg.w, 12, 4); ctx.fill();
+          // Fascetta scura sotto
+          ctx.fillStyle = '#15803d';
+          ctx.beginPath(); ctx.roundRect(sx + 2, seg.surfaceY + 9, seg.w - 4, 5, [0, 0, 3, 3]); ctx.fill();
+          // Highlight in cima
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          ctx.fillRect(sx + 3, seg.surfaceY + 1, seg.w - 6, 3);
+        }
+      });
+
+      // ── Monete ─────────────────────────────────────────────
+      this.coins.forEach(c => {
+        if (c.collected) return;
+        const sx = c.wx - this.camX;
+        if (sx < -20 || sx > W + 20) return;
+        const bob = Math.sin(this.time * 3.8 + c.bob) * 4;
+        const cy  = c.y + 7 + bob;
+        ctx.shadowColor = '#fdd400'; ctx.shadowBlur = 10;
+        ctx.fillStyle = '#fdd400';
+        ctx.beginPath(); ctx.arc(sx + 7, cy, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath(); ctx.arc(sx + 7, cy, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.beginPath(); ctx.arc(sx + 5, cy - 2, 3, 0, Math.PI * 2); ctx.fill();
+      });
+
+      // ── Nemici ─────────────────────────────────────────────
+      this.enemies.forEach(e => {
+        if (!e.alive) return;
+        const sx = e.wx - this.camX;
+        if (sx < -EW - 4 || sx > W + 4) return;
+        Sprites.blit(ctx, enemySprites, e.frame, sx, e.y, e.vx > 0);
+      });
+
+      // ── Player ─────────────────────────────────────────────
+      const p = this.player;
+      if (!p.alive) ctx.globalAlpha = Math.max(0, 1 - p.deathClock * 2.2);
+      Sprites.blit(ctx, heroSprites, p.frameIdx, PLAYER_SX, p.y);
+      ctx.globalAlpha = 1;
+
+      // ── Particelle ─────────────────────────────────────────
+      this.particles.forEach(pt => {
+        ctx.globalAlpha = Math.max(0, pt.life * 2.2);
+        ctx.fillStyle   = pt.color;
+        ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
+      });
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // ── Avvio/restart ─────────────────────────────────────────
+  document.getElementById('btnStart').addEventListener('click', () => {
+    overlayIdle.classList.add('hidden');
+    Game.reset();
+    Game.state = 'playing';
+    BubbleEngine.loop.start();
+  });
+
+  document.getElementById('btnRestart').addEventListener('click', () => {
+    overlayGO.classList.add('hidden');
+    Game.reset();
+    Game.state = 'playing';
+  });
+
+  function showGameOver(score) {
+    BubbleEngine.loop.stop();
+    const isHS = BubbleScores.isHighScore(GAME_ID, score);
+    BubbleScores.save(GAME_ID, score);
+    BubbleScores.renderList(GAME_ID, document.getElementById('leaderboardList'));
+    finalScoreEl.textContent = score.toLocaleString('it-IT');
+    hsBadge.classList.toggle('hidden', !isHS);
+    overlayGO.classList.remove('hidden');
+  }
+
+  BubbleEngine.setCallbacks(dt => Game.update(dt), ctx => Game.render(ctx));
+  </script>
+</body>
+</html>

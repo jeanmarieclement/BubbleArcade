@@ -15,7 +15,8 @@ window.BubbleEngine = (() => {
         if (!input.keys.has(e.code)) input.justPressed.add(e.code);
         input.keys.add(e.code);
         if (!audio.ctx) audio._init();
-        e.preventDefault();
+        const tag = e.target.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
       });
       window.addEventListener('keyup', e => {
         input.keys.delete(e.code);
